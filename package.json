@@ -1,0 +1,31 @@
+{
+  "name": "sdb",
+  "version": "1.0.0",
+  "description": "sdb, the right database",
+  "main": "sdb.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewhodel/sdb.git"
+  },
+  "keywords": [
+    "database",
+    "memory",
+    "db",
+    "db",
+    "memory",
+    "database",
+    "lightweight",
+    "database",
+    "mongodb",
+    "nosql"
+  ],
+  "author": "Andrew Hodel",
+  "license": "SEE LICENSE IN AH-LICENSE-V1",
+  "bugs": {
+    "url": "https://github.com/andrewhodel/sdb/issues"
+  },
+  "homepage": "https://github.com/andrewhodel/sdb#readme"
+}
