@@ -25,6 +25,9 @@ mydb.find({});
 ###### returns an array containing documents
 ###### it also adds a field, _relevance to each document which is the number of matched fields
 ###### you can sort by it using sort()
+###### you may wonder why sort(), limit() and find() are not chained as it seems that it would be faster
+###### the truth is that all the documents have to be found before limit() or find()
+###### in order to sort by _relevance
 
 # sorting documents
 ###### highest_first - Z10-A0
@@ -35,7 +38,7 @@ mydb.sort({lat:'highest_first'}), docs);
 # limiting the number of results
 ###### first argument is the number to limit the results to
 mydb.limit(1, docs);
-###### returns an array containing the limited document
+###### returns an array containing the limited documents
 
 # skipping the first N results
 mydb.skip(1, docs);

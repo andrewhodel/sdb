@@ -167,11 +167,13 @@ sdb.prototype.find = function(query) {
 						if (existing_position) {
 							continue;
 						}
+
 						var t_doc = this.docs[this.indexes[key].values[c].positions[n]];
 						// add the relevance, which is the number of matched fields
 						t_doc._relevance = 1;
 						docs.push(t_doc);
 						positions.push([this.indexes[key].values[c].positions[n], docs.length-1]);
+
 					}
 				}
 			}
