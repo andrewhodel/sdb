@@ -27,18 +27,18 @@ var sdb = function(path=false) {
 sdb.prototype.insert = function(doc) {
 	// doc is an object which is the document
 
-	// wait for access to the db
-	while (this.canUse == 0) {
-		// wait
-	}
-	this.canUse = 0;
-
 	// ensure that no field names exist with _ as the first character
 	for (field in doc) {
 		if (field[0] == '_') {
 			return 'Documents cannot contain fields which start with an _, like '+field;
 		}
 	}
+
+	// wait for access to the db
+	while (this.canUse == 0) {
+		// wait
+	}
+	this.canUse = 0;
 
 	// add an _id to the document
 	doc._id = crypto.createHash('sha1').update(Math.random().toString() + (new Date()).valueOf().toString()).digest('hex');
@@ -227,9 +227,6 @@ sdb.prototype.find = function(query) {
 
 		}
 	}
-
-	// FIXME should add some sort of _relevance thing here, if a document has more matches
-	// then it should be more relevant
 
 	// release the atomic hold
 	this.canUse = 1;
