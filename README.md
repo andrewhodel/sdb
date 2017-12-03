@@ -86,7 +86,7 @@ mydb.remove_index('field');
 mydb.save('my.db');
 
 # npm
-npm install sdb
+npm install sdbjs
 
 # an example showing everything
 node example.js

@@ -1,5 +1,5 @@
 {
-  "name": "sdb",
+  "name": "sdbjs",
   "version": "1.0.0",
   "description": "sdb, the right database",
   "main": "sdb.js",
