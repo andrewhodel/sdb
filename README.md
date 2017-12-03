@@ -66,7 +66,7 @@ mydb.update(query, update, options);
 # removing documents
 ###### first argument is a query like that passed to find or update
 mydb.remove({});
-# returns num_removed
+###### returns number of documents removed
 
 # create an index
 ###### field (string) - name of the field to index
