@@ -21,7 +21,12 @@ mydb.insert(doc);
 ###### you cannot create documents which have fields with an _ as the first character
 
 # finding all documents
-mydb.find({});
+###### the first argument is an object which is the actual search
+###### the second argument (optional) is an object listing which fields have regexes
+###### a normal search, mydb.find({name:'yourname'});
+###### a regex search, mydb.find({name:'you*'}, {name: true});
+###### a regex search will not find anything without an index
+mydb.find({}, {});
 ###### returns an array containing documents
 ###### it also adds a field, _relevance to each document which is the number of matched fields
 ###### you can sort by it using sort()

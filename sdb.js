@@ -124,8 +124,10 @@ sdb.prototype.insert = function(doc) {
 
 };
 
-sdb.prototype.find = function(query) {
+sdb.prototype.find = function(query, has_regex={}) {
 	// query is an object of what to search by
+	// has regex is an object that says what fields are a regex
+	// you cannot just use instanceof RegExp because it might be part of a normal string
 
 	// wait for access to the db
 	while (this.canUse == 0) {
@@ -146,11 +148,28 @@ sdb.prototype.find = function(query) {
 
 	// search through the keys and add the documents from the indexed keys
 	for (key in query) {
-		// check if an index exists for this key
+		do_search = false;
+		if (typeof(has_regex[key]) != 'undefined') {
+			try {
+				if (has_regex[key] == true) {
+					query[key] = new RegExp(query[key]);
+					do_search = true;
+				}
+			} catch (err) {
+				// not a regex
+				this.canUse = 1;
+				return 'error with regex for '+key;
+			}
+		}
 		if (typeof(this.indexes[key]) == 'object') {
+			// an index exists for this string value exactly
+			do_search = true;
+		}
+
+		if (do_search) {
 			// check each value and look for a match
 			for (var c=0; c<this.indexes[key].values.length; c++) {
-				if (this.indexes[key].values[c].value == query[key]) {
+				if (this.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && this.indexes[key].values[c].value.search(query[key]) > -1)) {
 					// found a matching value, add all these documents to docs
 					for (var n=0; n<this.indexes[key].values[c].positions.length; n++) {
 						// ensure the position isn't already added
@@ -177,7 +196,7 @@ sdb.prototype.find = function(query) {
 					}
 				}
 			}
-		
+	
 			// we can remove the key from query here as we know we do not need to do an
 			// exhaustive search using this key, it was already indexed
 			delete query[key];
