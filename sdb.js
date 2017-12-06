@@ -152,7 +152,20 @@ sdb.prototype.find = function(query, has_regex={}) {
 		if (typeof(has_regex[key]) != 'undefined') {
 			try {
 				if (has_regex[key] == true) {
-					query[key] = new RegExp(query[key]);
+					if (query[key].charAt(0) == '/') {
+						// if the first character is / then the regex is a string in regex format, like /asdf/i
+						// there can be a total of 5 flags after the last / in the regex, like /asdf/gimuy
+						// so we need to find the position of the last / in the string
+						var lastSlash = query[key].lastIndexOf('/');
+						// now generate the regex with the flags
+						var s = query[key].slice(1, lastSlash);
+						var flags = query[key].slice(lastSlash+1);
+						query[key] = new RegExp(s, flags);
+					} else {
+						// this is just a string to regex, so only the parts of the regex inside the //
+						// like ^asdf
+						query[key] = new RegExp(query[key]);
+					}
 					do_search = true;
 				}
 			} catch (err) {
