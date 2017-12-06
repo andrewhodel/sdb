@@ -24,7 +24,7 @@ mydb.insert(doc);
 ###### the first argument is an object which is the actual search
 ###### the second argument (optional) is an object listing which fields have regexes
 ###### a normal search, mydb.find({name:'yourname'});
-###### a regex search, mydb.find({name:'you*'}, {name: true});
+###### a regex search, mydb.find({name:'^you'}, {name: true});
 ###### a regex search will not find anything without an index
 mydb.find({}, {});
 ###### returns an array containing documents
