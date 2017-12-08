@@ -103,10 +103,6 @@ sdb.prototype.insert = function(doc) {
 							this.indexes[field].values.push({value: add_to_indexes[c].value, positions: [this.docs.length-1]});
 						}
 					}
-					// we can break here which will bring us back to the next iteration of the add_to_indexes loop
-					// rather than continuing on through each field in this.indexes
-					// as we know we've already found the match
-					break;
 				}
 			}
 		}
@@ -117,7 +113,7 @@ sdb.prototype.insert = function(doc) {
 
 	if (error == null) {
 		// return the document
-		return doc;
+		return JSON.parse(JSON.stringify(doc));
 	} else {
 		return error;
 	}
@@ -139,8 +135,8 @@ sdb.prototype.find = function(query, has_regex={}) {
 	if (keys_length == 0) {
 		// release the atomic hold
 		this.canUse = 1;
-		// return the whole db
-		return this.docs;
+		// return the whole db as a deep copy
+		return JSON.parse(JSON.stringify(this.docs));
 	}
 
 	var docs = [];
@@ -180,6 +176,14 @@ sdb.prototype.find = function(query, has_regex={}) {
 		}
 
 		if (do_search) {
+			/*
+			if (query[key] instanceof RegExp) {
+				console.log('doing a regex search through indexes');
+			} else {
+				console.log('doing a search through indexes');
+			}
+			*/
+
 			// check each value and look for a match
 			for (var c=0; c<this.indexes[key].values.length; c++) {
 				if (this.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && this.indexes[key].values[c].value.search(query[key]) > -1)) {
@@ -265,7 +269,9 @@ sdb.prototype.find = function(query, has_regex={}) {
 	// release the atomic hold
 	this.canUse = 1;
 
-	return docs;
+	// the documents have to be returned as a deep copy
+	// to avoid being accidently modified
+	return JSON.parse(JSON.stringify(docs));
 
 };
 
@@ -682,7 +688,8 @@ sdb.prototype.update = function(query, update, options=null) {
 			updated_docs.push(this.insert(update));
 		}
 
-		return updated_docs;
+		// as a deep copy
+		return JSON.parse(JSON.stringify(updated_docs));
 	} else {
 		return error;
 	}
@@ -874,6 +881,19 @@ sdb.prototype.save = function(path) {
 
 	this.canUse = 1;
 
+};
+
+sdb.prototype.lock = function() {
+	// lock the db
+	while (this.canUse == 0) {
+		// wait
+	}
+	this.canUse = 0;
+};
+
+sdb.prototype.unlock = function() {
+	// unlock the db
+	this.canUse = 1;
 };
 
 module.exports = sdb;
