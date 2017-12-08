@@ -614,9 +614,9 @@ sdb.prototype.update = function(query, update, options=null) {
 				break;
 			}
 
-			// since there was no error with the indexes
-			// we need to loop through every index and every value
-			// and remove any occurences with a position of c
+			// since there was no error with the proposed insertion of the indexes
+			// we need to loop through every index field and every value within
+			// and remove any occurences with a position of that of the original document
 			for (field in this.indexes) {
 
 				for (var n=this.indexes[field].values.length-1; n>=0; n--) {
@@ -624,13 +624,13 @@ sdb.prototype.update = function(query, update, options=null) {
 						if (this.indexes[field].values[n].positions[p] == c) {
 							// the original (non updated) document
 							// had a position here, remove it
-							this.indexes[field].values[n].positions.splice(p);
-							break;
+							this.indexes[field].values[n].positions.splice(p, 1);
+							//break;
 						}
 					}
 					if (this.indexes[field].values[n].positions.length == 0) {
 						// there are no positions left for this value, go ahead and remove the value
-						this.indexes[field].values.splice(n);
+						this.indexes[field].values.splice(n, 1);
 					}
 				}
 
@@ -736,13 +736,13 @@ sdb.prototype.remove = function(query) {
 						if (this.indexes[field].values[n].positions[p] == c) {
 							// the original (non updated) document
 							// had a position here, remove it
-							this.indexes[field].values[n].positions.splice(p);
+							this.indexes[field].values[n].positions.splice(p, 1);
 							break;
 						}
 					}
 					if (this.indexes[field].values[n].positions.length == 0) {
 						// there are no positions left for this value, go ahead and remove the value
-						this.indexes[field].values.splice(n);
+						this.indexes[field].values.splice(n, 1);
 					}
 				}
 			}
