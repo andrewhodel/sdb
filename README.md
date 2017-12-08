@@ -94,34 +94,33 @@ mydb.remove_index('field');
 mydb.save('my.db');
 
 # lock(), unlock() and the SQL vs noSQL wars
-/*
- * SQL bitches because of this situation; imagine that
- * 2 users were accessing the database and while one was
- * reading a list of id's in one table and joining them to a list of
- * names with corresponding id's in another table another user was
- * modifying the list of corresponding names to id's in the other table.
- *
- * so nosql tries to solve this by basically using only the locks
- * of update and read per "table" or "collection" call
- * (meaning they have no JOINS and they have plenty of hard drive space)
- * they do this by storing the "oh I need to look up the _id to get that name"
- * directly in the first table or collection.
- * nosql basically says let's fragment everything up into tiny databases
- * and handle the locks at a higher level, like at the API between 2 or more
- * parties so that 50 people aren't accessing something at once anyway.
- * you have to admit that does seem prone to error
- *
- * the issue is that then if you have a table with a million rows storing the same
- * data there's no point in using the relational part of a database
- *
- * what I do not understand, is why can't they just pass along a function allowing
- * the user to lock and unlock their own database?
- * Then the user just needs find, update and delete and if they wan't to join
- * in any crazy way they can dream up, they just do it in the data loops (they can store it locally in a big loop while locking)
- *
- * that is why db.lock() and db.unlock() exist in sdb, you
- * only need to use them if this type of situation were to arise
- */
+> SQL bitches because of this situation; imagine that
+> 2 users were accessing the database and while one was
+> reading a list of id's in one table and joining them to a list of
+> names with corresponding id's in another table another user was
+> modifying the list of corresponding names to id's in the other table.
+> 
+> so nosql tries to solve this by basically using only the locks
+> of update and read per "table" or "collection" call
+> (meaning they have no JOINS and they have plenty of hard drive space)
+> they do this by storing the "oh I need to look up the _id to get that name"
+> directly in the first table or collection.
+> nosql basically says let's fragment everything up into tiny databases
+> and handle the locks at a higher level, like at the API between 2 or more
+> parties so that 50 people aren't accessing something at once anyway.
+> you have to admit that does seem prone to error
+> 
+> the issue is that then if you have a table with a million rows storing the same
+> data there's no point in using the relational part of a database
+> 
+> what I do not understand, is why can't they just pass along a function allowing
+> the user to lock and unlock their own database?
+> Then the user just needs find, update and delete and if they wan't to join
+> in any crazy way they can dream up, they just do it in the data loops (they can store it locally in a big loop while locking)
+> 
+> that is why db.lock() and db.unlock() exist in sdb, you
+> only need to use them if this type of situation were to arise
+
 mydb.lock();
 ###### locks the database
 
