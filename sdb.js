@@ -548,27 +548,41 @@ sdb.prototype.update = function(query, update, options=null) {
 					// mod will be the modifier to use and update[mod] will be an object containing fields and values to use the modifier on
 					for (field in update[mod]) {
 						// apply the modifier to the value in the existing doc and copy the field to updated_doc
-						if (typeof(this.docs[c][field]) != 'undefined') {
-							switch (mod) {
-								case '$set':
-									updated_doc[field] = update[mod][field];
-									break;
-								case '$remove':
-									// in this case we just don't add it to the updated_doc
-									break;
-								case '$add':
-									updated_doc[field] = this.docs[c][field]+update[mod][field];
-									break;
-								case '$subtract':
-									updated_doc[field] = this.docs[c][field]-update[mod][field];
-									break;
-								case '$multiply':
-									updated_doc[field] = this.docs[c][field]*update[mod][field];
-									break;
-								case '$divide':
-									updated_doc[field] = this.docs[c][field]/update[mod][field];
-									break;
-							}
+						switch (mod) {
+							case '$set':
+								updated_doc[field] = update[mod][field];
+								break;
+							case '$remove':
+								// in this case we just don't add it to the updated_doc
+								break;
+							case '$add':
+								if (typeof(this.docs[c][field]) == 'undefined') {
+									updated_doc[field] = Number(update[mod][field]);
+								} else {
+									updated_doc[field] = Number(this.docs[c][field])+Number(update[mod][field]);
+								}
+								break;
+							case '$subtract':
+								if (typeof(this.docs[c][field]) == 'undefined') {
+									updated_doc[field] = -Number(update[mod][field]);
+								} else {
+									updated_doc[field] = Number(this.docs[c][field])-Number(update[mod][field]);
+								}
+								break;
+							case '$multiply':
+								if (typeof(this.docs[c][field]) == 'undefined') {
+									updated_doc[field] = 0;
+								} else {
+									updated_doc[field] = Number(this.docs[c][field])*Number(update[mod][field]);
+								}
+								break;
+							case '$divide':
+								if (typeof(this.docs[c][field]) == 'undefined') {
+									updated_doc[field] = 0;
+								} else {
+									updated_doc[field] = Number(this.docs[c][field])/Number(update[mod][field]);
+								}
+								break;
 						}
 					}
 				}
@@ -681,7 +695,7 @@ sdb.prototype.update = function(query, update, options=null) {
 	}
 
 	this.canUse = 1;
-	
+
 	if (error == null) {
 		if (num_updated_docs == 0 && options.upsert && !is_modifier) {
 			// this is an upsert, it's not a modifier update and there were no documents updated, so add it
