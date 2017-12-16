@@ -1,6 +1,6 @@
 {
   "name": "sdbjs",
-  "version": "8.8.8",
+  "version": "8.8.9",
   "description": "sdb, the right database",
   "main": "sdb.js",
   "scripts": {

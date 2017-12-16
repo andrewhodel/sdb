@@ -22,8 +22,9 @@ mydb.insert(doc);
 
 # finding all documents
 ###### the first argument is an object which is the actual search
-###### you can use strings or operator objects
-	{field: 'string to search by'}} // string search
+###### you can use operator objects or a value
+	{field: 'string to search by'} // string search
+	{field: 10} // number search
 	{field: {$regex: '/^string/i'}} // regex search
 	{field: {$gt: 0}} // greater than
 	{field: {$gte: 0}} // greater than or equal
