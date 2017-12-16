@@ -810,6 +810,8 @@ sdb.prototype.remove = function(query) {
 		if (num_matching_keys == keys_length) {
 			num_removed++;
 
+			//
+			//
 			// need to remove this document from all indexes with a matching position
 			for (field in this.indexes) {
 
@@ -819,6 +821,23 @@ sdb.prototype.remove = function(query) {
 							// the original (non updated) document
 							// had a position here, remove it
 							this.indexes[field].values[n].positions.splice(p, 1);
+
+							// the issue here is that if an index has 2 positions, representing two documents
+							// and I remove one document, with position 0
+							// then the index position 0 gets removed and the index position 1 stays in the index
+							// however the 2nd document which was originally at position 1 does not stay
+							// at position 1, it moves to position 0
+							//
+							// here we need to shift the positions
+							//
+							// you just take the position of the removed document, which is c
+							// then loop through each index position, if the position is less than c
+							// it stays the same and if it is greater than c it is decremented
+							for (var r=0; r<this.indexes[field].values[n].positions.length; r++) {
+								if (this.indexes[field].values[n].positions[r] > c) {
+									this.indexes[field].values[n].positions[r] -= 1;
+								}
+							}
 							break;
 						}
 					}
