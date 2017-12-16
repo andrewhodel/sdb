@@ -120,7 +120,7 @@ sdb.prototype.insert = function(doc) {
 
 };
 
-sdb.prototype.find = function(query, has_regex={}) {
+sdb.prototype.find = function(query) {
 	// query is an object of what to search by
 	// has regex is an object that says what fields are a regex
 	// you cannot just use instanceof RegExp because it might be part of a normal string
@@ -142,40 +142,40 @@ sdb.prototype.find = function(query, has_regex={}) {
 	var docs = [];
 	var positions = [];
 
-	// search through the keys and add the documents from the indexed keys
+	// try and do an index search for each key, if it's possible
 	for (key in query) {
-		do_search = false;
-		if (typeof(has_regex[key]) != 'undefined') {
-			try {
-				if (has_regex[key] == true) {
-					if (query[key].charAt(0) == '/') {
-						// if the first character is / then the regex is a string in regex format, like /asdf/i
-						// there can be a total of 5 flags after the last / in the regex, like /asdf/gimuy
-						// so we need to find the position of the last / in the string
-						var lastSlash = query[key].lastIndexOf('/');
-						// now generate the regex with the flags
-						var s = query[key].slice(1, lastSlash);
-						var flags = query[key].slice(lastSlash+1);
-						query[key] = new RegExp(s, flags);
-					} else {
-						// this is just a string to regex, so only the parts of the regex inside the //
-						// like ^asdf
-						query[key] = new RegExp(query[key]);
-					}
-					do_search = true;
+
+		// we need to convert regex operator searches to native javascript RegExp
+		if (typeof(query[key]) == 'object') {
+			for (op in query[key]) {
+				if (op == '$regex') {
+					// this is a regex search, which means that the
+					// string should equate to a regex
+					// like '/asdf/i'
+
+					// if the first character is / then the regex is a string in regex format, like /asdf/i
+					// there can be a total of 5 flags after the last / in the regex, like /asdf/gimuy
+					// so we need to find the position of the last / in the string
+					var lastSlash = query[key][op].lastIndexOf('/');
+					// now generate the regex with the flags
+					var s = query[key][op].slice(1, lastSlash);
+					var flags = query[key][op].slice(lastSlash+1);
+
+					// here we convert it to a native javascript RegExp
+					query[key] = new RegExp(s, flags);
+
 				}
-			} catch (err) {
-				// not a regex
-				this.canUse = 1;
-				return 'error with regex for '+key;
 			}
 		}
+
+		do_index_search = false;
 		if (typeof(this.indexes[key]) == 'object') {
-			// an index exists for this string value exactly
-			do_search = true;
+			// an index exists for this key
+			do_index_search = true;
 		}
 
-		if (do_search) {
+		if (do_index_search) {
+	
 			/*
 			if (query[key] instanceof RegExp) {
 				console.log('doing a regex search through indexes');
@@ -186,7 +186,9 @@ sdb.prototype.find = function(query, has_regex={}) {
 
 			// check each value and look for a match
 			for (var c=0; c<this.indexes[key].values.length; c++) {
+
 				if (this.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && this.indexes[key].values[c].value.search(query[key]) > -1)) {
+					// this is a string or regex search
 					// found a matching value, add all these documents to docs
 					for (var n=0; n<this.indexes[key].values[c].positions.length; n++) {
 						// ensure the position isn't already added
@@ -211,9 +213,24 @@ sdb.prototype.find = function(query, has_regex={}) {
 						positions.push([this.indexes[key].values[c].positions[n], docs.length-1]);
 
 					}
+
+				} else if (query[key] instanceof Object) {
+					// here we are putting operator searches in the index search
+					// meaning that these operators (currently only $regex) will use
+					// the indexes
+					//
+					// if you think of the other operators, like $gt and $lt there is really no
+					// point in creating an index for a floating number or an amount
+					//
+					// perhaps there would be a point in having an internal datetime format
+					// then fractioning things up by day, month or year
+					// which would basically make a round robin database, like an onion
+					//
+					// this is just a placeholder, there's no operator index searches other than $regex currently
+				
 				}
 			}
-	
+
 			// we can remove the key from query here as we know we do not need to do an
 			// exhaustive search using this key, it was already indexed
 			delete query[key];
@@ -221,6 +238,8 @@ sdb.prototype.find = function(query, has_regex={}) {
 	}
 
 	// now, if there are any remaining keys, do an exhaustive search using them
+	// meaning search by the fields which were not indexed
+	// _id is also searched for here
 	if (Object.keys(query).length > 0) {
 		for (var c=0; c<this.docs.length; c++) {
 
@@ -232,9 +251,51 @@ sdb.prototype.find = function(query, has_regex={}) {
 						continue;
 					}
 					if (doc_key == key) {
-						// check if the keys value is the same as document's value for that key
-						if (this.docs[c][doc_key] == query[key]) {
+						var match = 0;
 
+						if (this.docs[c][doc_key] == query[key] || (query[key] instanceof RegExp && this.docs[c][doc_key].search(query[key]) > -1)) {
+							// this is an exact string match or a regex match
+							match = -1;
+
+						} else if (query[key] instanceof Object) {
+							// here we need to check if the search key is an operator
+							// if so we use the operator on the search
+
+							// do an operator search
+							for (op in query[key]) {
+
+								if (op == '$gt') {
+									// test if the doc's field's value is greater than the search value
+									if (this.docs[c][doc_key] > query[key][op]) {
+										match++;
+									}
+								} else if (op == '$gte') {
+									// test if the doc's field's value is greater than or equal to the search value
+									if (this.docs[c][doc_key] >= query[key][op]) {
+										match++;
+									}
+								} else if (op == '$lt') {
+									// test if the doc's field's value is less than the search value
+									if (this.docs[c][doc_key] < Number(query[key][op])) {
+										match++;
+									}
+								} else if (op == '$lte') {
+									// test if the doc's field's value is less than or equal to the search value
+									if (this.docs[c][doc_key] <= query[key][op]) {
+										match++;
+									}
+								}
+
+							}
+
+							if (Object.keys(query[key]).length == match) {
+								// every operator search matched
+								match = -1;
+							}
+
+						}
+
+						if (match == -1) {
 							// check if this document has already been found
 							var existing_position = false;
 							for (var l=0; l<positions.length; l++) {

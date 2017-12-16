@@ -22,11 +22,14 @@ mydb.insert(doc);
 
 # finding all documents
 ###### the first argument is an object which is the actual search
-###### the second argument (optional) is an object listing which fields have regexes
-###### a normal search, mydb.find({name:'yourname'});
-###### a regex search, mydb.find({name:'^you'}, {name: true});
-###### a regex search will not find anything without an index
-mydb.find({}, {});
+###### you can use strings or operator objects
+	{field: 'string to search by'}} // string search
+	{field: {$regex: '/^string/i'}} // regex search
+	{field: {$gt: 0}} // greater than
+	{field: {$gte: 0}} // greater than or equal
+	{field: {$lt: 0}} // less than
+	{field: {$lte: 0}} // less than or equal
+mydb.find({});
 ###### returns an array containing documents
 ###### it also adds a field, _relevance to each document which is the number of matched fields
 ###### you can sort by it using sort()
@@ -53,20 +56,18 @@ mydb.skip(1, docs);
 ###### query is the same kind of query you would use with find or count
 
 ###### update explains how the document should be updated
-	it is either an object containing modifiers
-	$set - change a fields value
-	$remove - delete a field
-	$add - add by a value
-	$subtract - subtract by a value
-	$multiply - multiply by a value
-	$divide - divide by a value
-
-	# or an object which will simply replace the existing object, except the _id
+###### it is either an object containing modifiers or a field with a value
 	{field: 'value'}
+	{field: {$set: 'value'}} // change a fields value
+	{field: {$remove: 1}} // delete a field
+	{field: {$add: 1}} // add by a value
+	{field: {$subtract: 1}}} // subtract by a value
+	{field: {$multiply: 10}} // multiply by a value
+	{field: {$divide: 10}} // divide by a value
 
 ###### options sets the available options for the update
-	multi - (default false) updates multiple documents if true
-	upsert - (default false) adds a new document if no existing document matches if true
+	{multi: false} // (default false) updates multiple documents if true
+	{upsert:false} // (default false) adds a new document if no existing document matches if true
 mydb.update(query, update, options);
 ###### returns the updated documents on success
 ###### or a string indicating the error on failure
