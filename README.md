@@ -32,7 +32,7 @@ mydb.insert(doc);
 	{field: {$lte: 0}} // less than or equal
 mydb.find({});
 ###### returns an array containing documents
-###### it also adds a field, _relevance to each document which is the number of matched fields
+###### it also returns a field, _relevance to each document which is the number of matched fields
 ###### you can sort by it using sort()
 ###### you may wonder why sort(), limit() and find() are not chained as it seems that it would be faster
 ###### the truth is that all the documents have to be found before limit() or find()
@@ -57,8 +57,8 @@ mydb.skip(1, docs);
 ###### query is the same kind of query you would use with find or count
 
 ###### update explains how the document should be updated
-###### it is either an object containing modifiers or a field with a value
-	{field: 'value'}
+###### it is either an object containing modifiers or a document to replace the document or documents found with the query
+	{field1: 'value', field2: 'another value'} // replaces the entire document except _id
 	{field: {$set: 'value'}} // change a fields value
 	{field: {$remove: 1}} // delete a field
 	{field: {$add: 1}} // add by a value
