@@ -59,12 +59,12 @@ mydb.skip(1, docs);
 ###### update explains how the document should be updated
 ###### it is either an object containing modifiers or a document to replace the document or documents found with the query
 	{field1: 'value', field2: 'another value'} // replaces the entire document except _id
-	{field: {$set: 'value'}} // change a fields value
-	{field: {$remove: 1}} // delete a field
-	{field: {$add: 1}} // add by a value
-	{field: {$subtract: 1}}} // subtract by a value
-	{field: {$multiply: 10}} // multiply by a value
-	{field: {$divide: 10}} // divide by a value
+	{$set: {field: 'value'}} // change a fields value
+	{$remove: {field: 1}} // delete a field
+	{$add: {field: 1}} // add by a value
+	{$subtract: {field: 1}}} // subtract by a value
+	{$multiply: {field: 10}} // multiply by a value
+	{$divide: {field: 10}} // divide by a value
 
 ###### options sets the available options for the update
 	{multi: false} // (default false) updates multiple documents if true
