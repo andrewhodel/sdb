@@ -208,7 +208,16 @@ sdb.prototype.find = function(query) {
 
 						var t_doc = this.docs[this.indexes[key].values[c].positions[n]];
 						// add the relevance, which is the number of matched fields
-						t_doc._relevance = 1;
+						try {
+							t_doc._relevance = 1;
+						} catch (err) {
+							console.log(err);
+							console.log('t_doc', t_doc);
+							console.log('this.docs.length', this.docs.length);
+							console.log('this.indexes[key].values[c]', this.indexes[key].values[c]);
+							console.log('this.indexes[key].values[c].positions[n]', this.indexes[key].values[c].positions[n]);
+							process.exit();
+						}
 						docs.push(t_doc);
 						positions.push([this.indexes[key].values[c].positions[n], docs.length-1]);
 
@@ -783,6 +792,7 @@ sdb.prototype.remove = function(query) {
 	var keys_length = Object.keys(query).length;
 
 	var num_removed = 0;
+	var removed_positions = [];
 
 	// search through the keys and find matching documents
 	var num_matching_keys = 0;
@@ -810,8 +820,6 @@ sdb.prototype.remove = function(query) {
 		if (num_matching_keys == keys_length) {
 			num_removed++;
 
-			//
-			//
 			// need to remove this document from all indexes with a matching position
 			for (field in this.indexes) {
 
@@ -821,23 +829,6 @@ sdb.prototype.remove = function(query) {
 							// the original (non updated) document
 							// had a position here, remove it
 							this.indexes[field].values[n].positions.splice(p, 1);
-
-							// the issue here is that if an index has 2 positions, representing two documents
-							// and I remove one document, with position 0
-							// then the index position 0 gets removed and the index position 1 stays in the index
-							// however the 2nd document which was originally at position 1 does not stay
-							// at position 1, it moves to position 0
-							//
-							// here we need to shift the positions
-							//
-							// you just take the position of the removed document, which is c
-							// then loop through each index position, if the position is less than c
-							// it stays the same and if it is greater than c it is decremented
-							for (var r=0; r<this.indexes[field].values[n].positions.length; r++) {
-								if (this.indexes[field].values[n].positions[r] > c) {
-									this.indexes[field].values[n].positions[r] -= 1;
-								}
-							}
 							break;
 						}
 					}
@@ -850,7 +841,44 @@ sdb.prototype.remove = function(query) {
 
 			// remove the document
 			this.docs.splice(c, 1);
+
+			// store the initial position of the removed document
+			removed_positions.push(c);
 		}
+	}
+
+	if (num_removed > 0) {
+		// now we need to go back through the indexes and adjust for the new positions
+		// because if a document at position 0 was removed, then every index position for all fields and values
+		// will need to be decremented by 1
+		//
+		// if a document at position 1 was removed, then every index position which
+		// is >= 1 will need to be decremented by 1
+		//
+		// -------------------------
+		//
+		// we also need to take into account the removed_positions array and that documents
+		// stored in it were removed with a reverse loop
+		//
+		// so if 2 documents were removed, one with position 4 and one with position 2
+		// removed_positions would look like this: [4, 2]
+		//
+		// we would need to first decrement every index position which is >= 4 by 1
+		// then reloop and decrement every index position which is >= 2 by 1
+
+		for (var c=0; c<removed_positions.length; c++) {
+			for (field in this.indexes) {
+				for (var r=0; r<this.indexes[field].values.length; r++) {
+					for (var n=0; n<this.indexes[field].values[r].positions.length; n++) {
+						if (this.indexes[field].values[r].positions[n] >= removed_positions[c]) {
+							// decrement this position by 1
+							this.indexes[field].values[r].positions[n]--;
+						}
+					}
+				}
+			}
+		}
+
 	}
 
 	// release the atomic hold
