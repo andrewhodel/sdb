@@ -1,3 +1,6 @@
+# FIRST
+Please file a bug report if you have a problem.
+
 # sdb, the right database
 var sdb = require('sdbjs'); // use sdb.js is you got this from source, sdbjs is for npm
 
@@ -19,6 +22,15 @@ var doc = {planet: 'Earth',
 mydb.insert(doc);
 ###### returns the newly inserted document, including it's automatically generated _id
 ###### you cannot create documents which have fields with an _ as the first character
+
+###### It will return an object if the insert was a success and an error string if the insert was a failure
+###### Here is how you check for an error
+var inserted_doc = db.insert({name: 'name'});
+if (typeof(inserted_doc) == 'string') {
+	// there was an error
+} else {
+	// insert was a success
+}
 
 # finding all documents
 ###### the first argument is an object which is the actual search
