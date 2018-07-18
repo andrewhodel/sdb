@@ -1,5 +1,5 @@
 # sdb, the right database
-var sdb = require('sdb.js');
+var sdb = require('sdbjs'); // use sdb.js is you got this from source, sdbjs is for npm
 
 # create a new datastore
 ###### the first argument is optional and will load data from an existing save
