@@ -1,6 +1,6 @@
 {
   "name": "sdbjs",
-  "version": "77.77.77",
+  "version": "77.77.78",
   "description": "sdb, a database in js that operates in memory and provides indexes, range searches, regex searches and fulltext searches",
   "main": "sdb.js",
   "scripts": {

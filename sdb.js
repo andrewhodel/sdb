@@ -272,22 +272,22 @@ sdb.prototype.find = function(query) {
 
 								if (op == '$gt') {
 									// test if the doc's field's value is greater than the search value
-									if (this.docs[c][doc_key] > query[key][op]) {
+									if (Number(this.docs[c][doc_key]) > Number(query[key][op])) {
 										match++;
 									}
 								} else if (op == '$gte') {
 									// test if the doc's field's value is greater than or equal to the search value
-									if (this.docs[c][doc_key] >= query[key][op]) {
+									if (Number(this.docs[c][doc_key]) >= Number(query[key][op])) {
 										match++;
 									}
 								} else if (op == '$lt') {
 									// test if the doc's field's value is less than the search value
-									if (this.docs[c][doc_key] < Number(query[key][op])) {
+									if (Number(this.docs[c][doc_key]) < Number(query[key][op])) {
 										match++;
 									}
 								} else if (op == '$lte') {
 									// test if the doc's field's value is less than or equal to the search value
-									if (this.docs[c][doc_key] <= query[key][op]) {
+									if (Number(this.docs[c][doc_key]) <= Number(query[key][op])) {
 										match++;
 									}
 								} else if (op == '$fulltext') {
@@ -321,7 +321,7 @@ sdb.prototype.find = function(query) {
 
 							}
 
-							if (Object.keys(query[key]).length == match) {
+							if (Object.keys(query[key]).length == match && match > 0) {
 								// every operator search matched for a comparison search
 								match = -1;
 							}
