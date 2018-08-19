@@ -1,7 +1,7 @@
 {
   "name": "sdbjs",
-  "version": "66.85.71.82.69.80.79.82.84.71.79.79.68",
-  "description": "sdb, the right database",
+  "version": "7.77",
+  "description": "sdb, a database in js that operates in memory and provides indexes, range searches, regex searches and fulltext searches",
   "main": "sdb.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

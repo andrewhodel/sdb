@@ -250,17 +250,14 @@ sdb.prototype.find = function(query) {
 	// meaning search by the fields which were not indexed
 	// _id is also searched for here
 	if (Object.keys(query).length > 0) {
+		console.log('sdb doing non index search');
 		for (var c=0; c<this.docs.length; c++) {
 
 			for (key in query) {
 				for (doc_key in this.docs[c]) {
-					if (this.docs[c][doc_key].length > 500) {
-						// this is too damn long to search by, might be a base64 or a buffer or something
-						// exclude it
-						continue;
-					}
 					if (doc_key == key) {
 						var match = 0;
+						var relevance_mod = 0;
 
 						if (this.docs[c][doc_key] == query[key] || (query[key] instanceof RegExp && this.docs[c][doc_key].search(query[key]) > -1)) {
 							// this is an exact string match or a regex match
@@ -293,18 +290,45 @@ sdb.prototype.find = function(query) {
 									if (this.docs[c][doc_key] <= query[key][op]) {
 										match++;
 									}
+								} else if (op == '$fulltext') {
+									// perform a fulltext search and return how relevant each document is
+
+									// first split up each of the words in the search query using the space character
+									var spaced = query[key][op].split(' ');
+
+									// remove simple words from spaced, these are of no use in a full text search
+									var simple = ['i', 'you', 'the', 'this', 'is', 'of', 'a', 'we', 'us', 'it', 'them', 'they'];
+									for (var r=spaced.length-1; r>=0; r--) {
+										for (var n=0; n<simple.length; n++) {
+											if (spaced[r].toLowerCase() == simple[n] || spaced[r].length == 1) {
+												spaced.splice(r, 1);
+												break;
+											}
+										}
+									}
+
+									// now loop through the field and test how many times each word was found
+									var words = this.docs[c][doc_key].split(' ');
+									for (var r=0; r<words.length; r++) {
+										for (var n=0; n<spaced.length; n++) {
+											if (words[r].toLowerCase() == spaced[n].toLowerCase()) {
+												relevance_mod++;
+											}
+										}
+									}
+
 								}
 
 							}
 
 							if (Object.keys(query[key]).length == match) {
-								// every operator search matched
+								// every operator search matched for a comparison search
 								match = -1;
 							}
 
 						}
 
-						if (match == -1) {
+						if (match == -1 || relevance_mod > 0) {
 							// check if this document has already been found
 							var existing_position = false;
 							for (var l=0; l<positions.length; l++) {
@@ -312,7 +336,11 @@ sdb.prototype.find = function(query) {
 									// this document is already added
 									existing_position = true;
 									// increase the relevance of the document
-									docs[positions[l][1]]._relevance++;
+									if (relevance_mod == 0) {
+										docs[positions[l][1]]._relevance++;
+									} else {
+										docs[positions[l][1]]._relevance += relevance_mod;
+									}
 									break;
 								}
 							}
@@ -325,6 +353,8 @@ sdb.prototype.find = function(query) {
 							var t_doc = this.docs[c];
 							// add the relevance, which is the number of matched fields
 							t_doc._relevance = 1;
+							// add relevance_mod which is only used for $fulltext
+							t_doc._relevance += relevance_mod;
 							docs.push(t_doc);
 							positions.push([c, docs.length-1]);
 						}

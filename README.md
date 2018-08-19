@@ -1,4 +1,6 @@
-# FIRST
+# SDB - a database in js that operates in memory and provides indexes, range searches, regex searches and fulltext searches
+
+# Having Problems?
 Please file a bug report if you have a problem.
 
 # sdb, the right database
@@ -38,6 +40,7 @@ if (typeof(inserted_doc) == 'string') {
 	{field: 'string to search by'} // string search
 	{field: 10} // number search
 	{field: {$regex: '/^string/i'}} // regex search
+	{field: {$fulltext: 'words to search with'}} // fulltext search
 	{field: {$gt: 0}} // greater than
 	{field: {$gte: 0}} // greater than or equal
 	{field: {$lt: 0}} // less than

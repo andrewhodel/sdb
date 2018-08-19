@@ -116,3 +116,11 @@ var read_mydb = new sdb('./my.db');
 console.log('\nread_mydb.find({})');
 var data = read_mydb.find({});
 console.log(util.inspect(data, true, 10, true));
+
+mydb.insert({title: 'this is a test'});
+mydb.insert({title: 'this is a test of a test'});
+mydb.insert({title: 'this is a test of a test of a test'});
+console.log('\nfull text search example');
+console.log('mydb.find({title: {$fulltext: "test is a"}})');
+var data = mydb.find({title: {$fulltext: 'test is a'}});
+console.log(util.inspect(data, true, 10, true));
