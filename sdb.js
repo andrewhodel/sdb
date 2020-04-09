@@ -1,3 +1,6 @@
+// Copyright 2020 Andrew Hodel
+// License MIT
+
 var fs = require('fs');
 var crypto = require('crypto');
 

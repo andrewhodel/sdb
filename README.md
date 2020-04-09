@@ -151,4 +151,4 @@ npm install sdbjs
 node example.js
 
 # License
-Read AH-LICENSE-V1 before use!
+MIT
