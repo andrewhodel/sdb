@@ -376,7 +376,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 		var c = docs.length-1;
 		while (c >= 0) {
 			if (docs[c]._relevance != keys_length) {
-				delete docs[c];
+				docs.splice(c, 1);
 			}
 			c--;
 		}

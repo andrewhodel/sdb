@@ -19,6 +19,6 @@ mydb.index('email', true, true);
 mydb.index('pw', true, true);
 
 console.log('\nmydb.find({email: \'user@domain.com\', pw: \'\'})');
-var data = mydb.find({email: 'user@domain.com', pw: 'test'});
+var data = mydb.find({email: 'user@domain.com', pw: 'tesasdft'});
 console.log(util.inspect(data, true, 10, true));
 
