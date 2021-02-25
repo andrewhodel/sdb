@@ -34,8 +34,8 @@ if (typeof(inserted_doc) == 'string') {
 	// insert was a success
 }
 
-# finding all documents
-###### the first argument is an object which is the actual search
+# finding documents
+###### the first argument is an object which is the query
 ###### you can use operator objects or a value
 	{field: 'string to search by'} // string search
 	{field: 10} // number search
@@ -45,9 +45,12 @@ if (typeof(inserted_doc) == 'string') {
 	{field: {$gte: 0}} // greater than or equal
 	{field: {$lt: 0}} // less than
 	{field: {$lte: 0}} // less than or equal
-mydb.find({});
-###### returns an array containing documents
+###### the second argument (require_all_keys) is optional and if false
+###### will return documents that only match some of the keys provided in the query
+mydb.find({}, false);
+###### returns an array containing documents that matched
 ###### it also returns a field, _relevance to each document which is the number of matched fields
+
 ###### you can sort by it using sort()
 ###### you may wonder why sort(), limit() and find() are not chained as it seems that it would be faster
 ###### the truth is that all the documents have to be found before limit() or find()

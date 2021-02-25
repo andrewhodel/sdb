@@ -123,7 +123,7 @@ sdb.prototype.insert = function(doc) {
 
 };
 
-sdb.prototype.find = function(query) {
+sdb.prototype.find = function(query, require_all_keys=true) {
 	// query is an object of what to search by
 	// has regex is an object that says what fields are a regex
 	// you cannot just use instanceof RegExp because it might be part of a normal string
@@ -205,6 +205,7 @@ sdb.prototype.find = function(query) {
 								break;
 							}
 						}
+
 						if (existing_position) {
 							continue;
 						}
@@ -253,7 +254,6 @@ sdb.prototype.find = function(query) {
 	// meaning search by the fields which were not indexed
 	// _id is also searched for here
 	if (Object.keys(query).length > 0) {
-		console.log('sdb doing non index search');
 		for (var c=0; c<this.docs.length; c++) {
 
 			for (key in query) {
@@ -366,6 +366,19 @@ sdb.prototype.find = function(query) {
 
 			}
 
+		}
+	}
+
+	if (require_all_keys) {
+		// this is the default, effectively performing a logical AND for each key
+		// if you set this to false, then you would get results for keys that don't match
+		// and you would use the relevance field on each document
+		var c = docs.length-1;
+		while (c >= 0) {
+			if (docs[c]._relevance != keys_length) {
+				delete docs[c];
+			}
+			c--;
 		}
 	}
 
