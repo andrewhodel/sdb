@@ -598,13 +598,17 @@ sdb.prototype.update = function(query, update, options=null) {
 		num_matching_keys = 0;
 		for (key in query) {
 			for (doc_key in this.docs[c]) {
+				if (this.docs[c][doc_key] == null || this.docs[c][doc_key] == undefined) {
+					// exclude fields that have a key but a value of undefined or null
+					continue;
+				}
 				if (this.docs[c][doc_key].length > 500) {
-					// this is too damn long to search by, might be a base64 or a buffer or something
+					// this is too long to search by, might be a base64 or a buffer or something
 					// exclude it
 					continue;
 				}
 				if (doc_key == key) {
-					// check if the value the doc_value
+					// check if the values of the query and this field in the document match
 					if (this.docs[c][doc_key] == query[key]) {
 						num_matching_keys++;
 					}
