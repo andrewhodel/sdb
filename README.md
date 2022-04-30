@@ -45,6 +45,7 @@ if (typeof(inserted_doc) == 'string') {
 	{field: {$gte: 0}} // greater than or equal
 	{field: {$lt: 0}} // less than
 	{field: {$lte: 0}} // less than or equal
+	{field: {$undef: 1}} // not defined
 ###### the second argument (require_all_keys) is optional and if false
 ###### will return documents that only match some of the keys provided in the query
 mydb.find({}, false);
