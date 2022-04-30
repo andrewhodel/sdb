@@ -800,8 +800,6 @@ sdb.prototype.update = function(query, update, options=null) {
 	}
 	this.canUse = 0;
 
-	console.log('update after wait');
-
 	var keys_length = Object.keys(query).length;
 
 	// set modifier status
