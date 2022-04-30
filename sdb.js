@@ -1,5 +1,6 @@
 // Copyright 2020 Andrew Hodel
 // License MIT
+'use strict';
 
 var fs = require('fs');
 var crypto = require('crypto');
@@ -10,7 +11,7 @@ var sdb = function(path=false) {
 		if (fs.existsSync(path)) {
 			// read from path
 			var local_sdb = JSON.parse(fs.readFileSync(path));
-			for (key in local_sdb) {
+			for (var key in local_sdb) {
 				this[key] = local_sdb[key];
 			}
 		} else {
@@ -27,21 +28,23 @@ var sdb = function(path=false) {
 
 }
 
-sdb.prototype.insert = function(doc) {
+sdb.prototype.insert = function(doc, already_blocking=false) {
 	// doc is an object that is the document
 
 	// ensure that no field names exist with _ as the first character
-	for (field in doc) {
+	for (var field in doc) {
 		if (field[0] == '_') {
 			return 'Documents cannot contain fields that start with an _, like '+field;
 		}
 	}
 
-	// wait for access to the db
-	while (this.canUse == 0) {
-		// wait
+	if (already_blocking === false) {
+		// wait for access to the db
+		while (this.canUse == 0) {
+			// wait
+		}
+		this.canUse = 0;
 	}
-	this.canUse = 0;
 
 	// add an _id to the document
 	doc._id = crypto.createHash('sha1').update(Math.random().toString() + (new Date()).valueOf().toString()).digest('hex');
@@ -49,7 +52,7 @@ sdb.prototype.insert = function(doc) {
 	var error = null;
 
 	// test all required_fields in any indexes and make sure this document has them all
-	for (field in this.indexes) {
+	for (var field in this.indexes) {
 		if (this.indexes[field].required_field) {
 			// this is a required field
 			// check that the document has this field
@@ -62,7 +65,7 @@ sdb.prototype.insert = function(doc) {
 
 	// test if any indexes exist for any of these fields
 	var add_to_indexes = [];
-	for (field in doc) {
+	for (var field in doc) {
 		if (error != null) {
 			break;
 		}
@@ -89,7 +92,7 @@ sdb.prototype.insert = function(doc) {
 			// add this document to all of the indexed fields in add_to_indexes
 			// the position is this.docs.length-1 because it was just added to this.docs
 			for (var c=0; c<add_to_indexes.length; c++) {
-				for (field in this.indexes) {
+				for (var field in this.indexes) {
 					if (add_to_indexes[c].field == field) {
 						// matching index
 						var found_matching_value = false;
@@ -111,12 +114,14 @@ sdb.prototype.insert = function(doc) {
 		}
 	}
 
-	// release the atomic hold
-	this.canUse = 1;
+	if (already_blocking === false) {
+		// release the atomic hold
+		this.canUse = 1;
+	}
 
 	if (error == null) {
 		// return the document
-		return JSON.parse(JSON.stringify(doc));
+		return doc;
 	} else {
 		return error;
 	}
@@ -136,21 +141,22 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 	var keys_length = Object.keys(query).length;
 	if (keys_length == 0) {
+		// return the whole db as a deep copy
+		var ret_val = JSON.parse(JSON.stringify(this.docs));
 		// release the atomic hold
 		this.canUse = 1;
-		// return the whole db as a deep copy
-		return JSON.parse(JSON.stringify(this.docs));
+		return ret_val;
 	}
 
 	var docs = [];
 	var positions = [];
 
 	// try and do an index search for each key, if it's possible
-	for (key in query) {
+	for (var key in query) {
 
 		// convert regex operator searches to native javascript RegExp
 		if (typeof(query[key]) == 'object') {
-			for (op in query[key]) {
+			for (var op in query[key]) {
 				if (op == '$regex') {
 					// this is a regex search, meaning that
 					// string should equate to a regex
@@ -171,7 +177,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 			}
 		}
 
-		do_index_search = false;
+		var do_index_search = false;
 		if (typeof(this.indexes[key]) == 'object') {
 			// an index exists for this key
 			do_index_search = true;
@@ -263,7 +269,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 			var match = 0;
 			var relevance_mod = 0;
 
-			for (key in query) {
+			for (var key in query) {
 
 				if (query[key]['$undef'] !== undefined) {
 
@@ -276,7 +282,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 				}
 
-				for (doc_key in this.docs[c]) {
+				for (var doc_key in this.docs[c]) {
 
 					if (doc_key == key) {
 
@@ -293,7 +299,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 							//console.log('operator search', query[key]);
 
 							// do an operator search
-							for (op in query[key]) {
+							for (var op in query[key]) {
 
 								if (op == '$gt') {
 									// test if the doc's field's value is greater than the search value
@@ -376,12 +382,12 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 			/*
 
-			for (key in query) {
+			for (var key in query) {
 
 				if (query[key] instanceof Object) {
 
 					// do an operator search
-					for (op in query[key]) {
+					for (var op in query[key]) {
 
 						if (key == '$gt') {
 							// test if the doc's field's value is greater than the search value
@@ -510,12 +516,14 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 		}
 	}
 
+	// the documents have to be returned as a deep copy
+	// to avoid being accidently modified
+	var ret_val = JSON.parse(JSON.stringify(docs));
+
 	// release the atomic hold
 	this.canUse = 1;
 
-	// the documents have to be returned as a deep copy
-	// to avoid being accidently modified
-	return JSON.parse(JSON.stringify(docs));
+	return ret_val;
 
 };
 
@@ -688,9 +696,9 @@ var modifier_update_doc = function(update, existing_doc={}) {
 	var modded_fields = [];
 
 	// loop through each modifier
-	for (mod in update) {
+	for (var mod in update) {
 		// mod will be the modifier to use and update[mod] will be an object containing fields and values to use the modifier on
-		for (field in update[mod]) {
+		for (var field in update[mod]) {
 			var field_already_modded = false;
 			for (var l=0; l<modded_fields.length; l++) {
 				if (modded_fields[l] == field) {
@@ -706,7 +714,7 @@ var modifier_update_doc = function(update, existing_doc={}) {
 
 	// with all the modded_fields
 	// loop through the existing document and add any non-modded fields to updated_doc
-	for (afield in existing_doc) {
+	for (var afield in existing_doc) {
 		var afield_exists = false;
 		for (var o=0; o<modded_fields.length; o++) {
 			if (modded_fields[o] == afield) {
@@ -722,9 +730,9 @@ var modifier_update_doc = function(update, existing_doc={}) {
 	}
 
 	// go back through the modifiers and process the updates for each field
-	for (mod in update) {
+	for (var mod in update) {
 		// mod will be the modifier to use and update[mod] will be an object containing fields and values to use the modifier on
-		for (field in update[mod]) {
+		for (var field in update[mod]) {
 
 			// apply the modifier to the value in the existing doc and copy the field to updated_doc
 			switch (mod) {
@@ -778,10 +786,10 @@ sdb.prototype.update = function(query, update, options=null) {
 		options.upsert = false;
 	}
 
-	error = null;
+	var error = null;
 
 	// ensure that no field names exist with _ as the first character
-	for (field in update) {
+	for (var field in update) {
 		if (field[0] == '_') {
 			return 'Documents cannot contain fields that start with an _, like '+field;
 		}
@@ -792,11 +800,13 @@ sdb.prototype.update = function(query, update, options=null) {
 	}
 	this.canUse = 0;
 
+	console.log('update after wait');
+
 	var keys_length = Object.keys(query).length;
 
 	// set modifier status
 	var is_modifier = 0;
-	for (key in update) {
+	for (var key in update) {
 		if (key == '$set' || key == '$remove' || key == '$add' || key == '$subtract' || key == '$multiply' || key == '$divide') {
 			is_modifier = 1;
 			break;
@@ -815,8 +825,8 @@ sdb.prototype.update = function(query, update, options=null) {
 	for (var c=0; c<this.docs.length; c++) {
 		var updated_doc = {};
 		num_matching_keys = 0;
-		for (key in query) {
-			for (doc_key in this.docs[c]) {
+		for (var key in query) {
+			for (var doc_key in this.docs[c]) {
 
 				if (this.docs[c][doc_key] == null || this.docs[c][doc_key] == undefined) {
 					// exclude fields that have a key but a value of undefined or null
@@ -856,7 +866,7 @@ sdb.prototype.update = function(query, update, options=null) {
 			updated_doc._id = this.docs[c]._id;
 
 			// need to update the indexes here
-			for (field in this.indexes) {
+			for (var field in this.indexes) {
 				// first check if this index is a required_field and ensure it exists in the updated_doc
 				if (this.indexes[field].required_field) {
 					if (typeof(updated_doc[field]) == 'undefined') {
@@ -897,7 +907,7 @@ sdb.prototype.update = function(query, update, options=null) {
 			// there was no error with the proposed insertion of the indexes
 			// loop through every index field and every value within
 			// and remove any occurences with a position of that of the original document
-			for (field in this.indexes) {
+			for (var field in this.indexes) {
 
 				for (var n=this.indexes[field].values.length-1; n>=0; n--) {
 					for (var p=this.indexes[field].values[n].positions.length-1; p>=0; p--) {
@@ -961,23 +971,28 @@ sdb.prototype.update = function(query, update, options=null) {
 		update = modifier_update_doc(update);
 	}
 
-	this.canUse = 1;
+	var ret_val = null;
 
 	if (error == null) {
 		if (num_updated_docs == 0 && options.upsert) {
-			// this is an upsert and there were no documents updated, insert it
+			// this is an upsert and there were no documents updated, insert it with already_blocking=true
 			//console.log('upsert -> insert', update);
-			updated_docs.push(this.insert(update));
+			updated_docs.push(this.insert(update, true));
 		}
 
 		//console.log('num_updated_docs', num_updated_docs);
 		//console.log('updated_docs (with inserted docs)', updated_docs);
 
 		// as a deep copy
-		return JSON.parse(JSON.stringify(updated_docs));
+		ret_val = JSON.parse(JSON.stringify(updated_docs));
+
 	} else {
-		return error;
+		ret_val = error;
 	}
+
+	this.canUse = 1;
+
+	return ret_val;
 
 };
 
@@ -999,8 +1014,8 @@ sdb.prototype.remove = function(query) {
 	var num_matching_keys = 0;
 	for (var c=this.docs.length-1; c>=0; c--) {
 		num_matching_keys = 0;
-		for (key in query) {
-			for (doc_key in this.docs[c]) {
+		for (var key in query) {
+			for (var doc_key in this.docs[c]) {
 
 				if (this.docs[c][doc_key] == null || this.docs[c][doc_key] == undefined) {
 					// exclude fields that have a key but a value of undefined or null
@@ -1028,7 +1043,7 @@ sdb.prototype.remove = function(query) {
 			num_removed++;
 
 			// need to remove this document from all indexes with a matching position
-			for (field in this.indexes) {
+			for (var field in this.indexes) {
 
 				for (var n=this.indexes[field].values.length-1; n>=0; n--) {
 					for (var p=this.indexes[field].values[n].positions.length-1; p>=0; p--) {
@@ -1074,7 +1089,7 @@ sdb.prototype.remove = function(query) {
 		// then reloop and decrement every index position that is >= 2 by 1
 
 		for (var c=0; c<removed_positions.length; c++) {
-			for (field in this.indexes) {
+			for (var field in this.indexes) {
 				for (var r=0; r<this.indexes[field].values.length; r++) {
 					for (var n=0; n<this.indexes[field].values[r].positions.length; n++) {
 						if (this.indexes[field].values[r].positions[n] >= removed_positions[c]) {
