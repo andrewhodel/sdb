@@ -10,14 +10,14 @@ var sdb = require('./sdb/sdb.js');
 
 # create a new db
 ```javascript
-# the first argument is optional and will load data from an existing save
-# if the path does not exist it will create it
+// the first argument is optional and will load data from an existing save
+// if the path does not exist it will create it
 var mydb = new sdb('/path/to/my.db');
 ```
 
 # insert a document
 ```javascript
-# a set of key|value pairs
+// a set of key|value pairs
 var doc = {planet: 'Earth',
 	ocean: 'Gulf of Mexico',
 	lat: 25,
@@ -30,8 +30,8 @@ mydb.insert(doc);
 ```
 
 ```javascript
-# returns an object if the insert was a success and an error string if the insert was a failure
-# will not create documents that have fields with an _ as the first character
+// returns an object if the insert was a success and an error string if the insert was a failure
+// will not create documents that have fields with an _ as the first character
 var inserted_doc = db.insert({name: 'name'});
 
 if (typeof(inserted_doc) == 'string') {
@@ -43,7 +43,7 @@ if (typeof(inserted_doc) == 'string') {
 
 # finding documents
 ```javascript
-# the first argument is the query object
+// the first argument is the query object
 {field: 'string to search by'} // string search
 {field: 10} // number search
 {field: {$undef: 1}} // not defined
@@ -58,53 +58,53 @@ if (typeof(inserted_doc) == 'string') {
 ```
 
 ```javascript
-# the second argument (require_all_keys) is optional and if false
-# will return documents that only match some of the keys provided in the query
+// the second argument (require_all_keys) is optional and if false
+// will return documents that only match some of the keys provided in the query
 mydb.find({}, false);
 
-# returns an array containing documents that matched
-# it also returns a field, _relevance to each document that is the number of matched fields
+// returns an array containing documents that matched
+// it also returns a field, _relevance to each document that is the number of matched fields
 ```
 
 # sorting documents
 ```javascript
-# sort by using sort()
-# sort(), limit() and find() are not chained
-# all the documents have to be found before limit() or find()
-# in order to sort by _relevance
+// sort by using sort()
+// sort(), limit() and find() are not chained
+// all the documents have to be found before limit() or find()
+// in order to sort by _relevance
 
-# highest_first - Z10-A0
-# lowest_first - A0-Z10
+// highest_first - Z10-A0
+// lowest_first - A0-Z10
 
-# returns an array containing sorted documents
+// returns an array containing sorted documents
 mydb.sort({lat:'highest_first'}), docs);
 ```
 
 # limiting the number of results
 ```javascript
-# first argument is the number to limit the results to
-# second argument is the docs object returned from find()
-# returns an array containing the limited documents
+// first argument is the number to limit the results to
+// second argument is the docs object returned from find()
+// returns an array containing the limited documents
 mydb.limit(1, docs);
 ```
 
 # skipping the first N results
 ```javascript
-# returns an array excluding the skipped documents
+// returns an array excluding the skipped documents
 mydb.skip(1, docs);
 ```
 
 # updating documents
 ```javascript
-# first argument
-# query is the same kind of query used with find or count
+// first argument
+// query is the same kind of query used with find or count
 {}
 ```
 
 ```javascript
-# second argument
-# update explains how the document should be updated
-# it is either an object containing modifiers or a document to replace the documents found using the query
+// second argument
+// update explains how the document should be updated
+// it is either an object containing modifiers or a document to replace the documents found using the query
 {field1: 'value', field2: 'another value'} // replaces the entire document except _id
 {$set: {field: 'value'}} // change a fields value
 {$remove: {field: 1}} // delete a field
@@ -115,43 +115,43 @@ mydb.skip(1, docs);
 ```
 
 ```javascript
-# third argument
-# options sets the available options for the update
+// third argument
+// options sets the available options for the update
 {multi: false} // (default false) updates multiple documents if true
 {upsert:false} // (default false) adds a new document if no existing document matches if true
 ```
 
 ```javascript
-# returns the updated documents on success
-# or a string indicating the error on failure
+// returns the updated documents on success
+// or a string indicating the error on failure
 mydb.update(query, update, options);
 ```
 
 # removing documents
 ```javascript
-# first argument is a query like that passed to find or update
-# returns number of documents removed
+// first argument is a query like that passed to find or update
+// returns number of documents removed
 mydb.remove({});
 ```
 
 # create an index
 ```javascript
-# first argument
-# field (string) - name of the field to index
+// first argument
+// field (string) - name of the field to index
 
-# second argument
-# unique (boolean default false) - if the field should be a unique field
+// second argument
+// unique (boolean default false) - if the field should be a unique field
 
-# third argument
-# required_field (boolean default false) - if the field is required for an insert and cannot be removed with $remove
+// third argument
+// required_field (boolean default false) - if the field is required for an insert and cannot be removed with $remove
 
-# returns true on success and error message string on failure
+// returns true on success and error message string on failure
 mydb.index(field, true, true);
 ```
 
 # remove an index
 ```javascript
-# returns nothing
+// returns nothing
 mydb.remove_index('field');
 ```
 
@@ -191,10 +191,10 @@ mydb.save('my.db');
 > That is why db.lock() and db.unlock() exist in sdb.
 
 ```javascript
-# lock the database
+// lock the database
 mydb.lock();
 
-# unlock the database
+// unlock the database
 mydb.unlock();
 ```
 
