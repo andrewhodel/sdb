@@ -164,7 +164,7 @@ mydb.save('my.db');
 ```
 
 # lock(), unlock() and the SQL vs noSQL wars
-> SQL tries to maintain relations with data that is only accessed by row id's.
+> SQL tries to maintain relations with data that are only accessed by row id's.
 > example:
 > 2 users were accessing the database and while one was
 > reading a list of id's in one table and joining them to a list of
