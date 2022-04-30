@@ -315,6 +315,17 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 									if (Number(this.docs[c][doc_key]) <= Number(query[key][op])) {
 										match++;
 									}
+								} else if (op == '$ne') {
+									// test if the doc's field's value is not equal to the search value
+									// works for numbers and strings
+									if (this.docs[c][doc_key] != query[key][op]) {
+										match++;
+									}
+								} else if (op == '$mod') {
+									// test if the doc's field's value modulus the search value equals 0
+									if (Number(this.docs[c][doc_key]) % Number(query[key][op]) === 0) {
+										match++;
+									}
 
 								} else if (op == '$fulltext') {
 									// perform a fulltext search and return how relevant each document is

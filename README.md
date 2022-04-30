@@ -39,13 +39,15 @@ if (typeof(inserted_doc) == 'string') {
 ###### you can use operator objects or a value
 	{field: 'string to search by'} // string search
 	{field: 10} // number search
+	{field: {$undef: 1}} // not defined
+	{field: {$ne: 1}} // not equal to 1 (works with strings also)
 	{field: {$regex: '/^string/i'}} // regex search
 	{field: {$fulltext: 'words to search with'}} // fulltext search
 	{field: {$gt: 0}} // greater than
 	{field: {$gte: 0}} // greater than or equal
 	{field: {$lt: 0}} // less than
 	{field: {$lte: 0}} // less than or equal
-	{field: {$undef: 1}} // not defined
+	{field: {$mod: 2}} // modulus 2 === 0
 ###### the second argument (require_all_keys) is optional and if false
 ###### will return documents that only match some of the keys provided in the query
 mydb.find({}, false);
