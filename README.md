@@ -63,7 +63,7 @@ if (typeof(inserted_doc) == 'string') {
 mydb.find({}, false);
 
 // returns an array containing documents that matched
-// it also returns a field, _relevance to each document that is the number of matched fields
+// it also returns a field, _relevance to each document that is the number of matched fields or operator matches
 ```
 
 # sorting documents

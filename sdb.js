@@ -128,6 +128,14 @@ sdb.prototype.insert = function(doc, already_blocking=false) {
 
 };
 
+var index_find = function() {
+
+}
+
+var deep_find = function() {
+
+}
+
 sdb.prototype.find = function(query, require_all_keys=true) {
 	// query is an object of what to search by
 	// has regex is an object that says what fields are a regex
@@ -151,7 +159,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 	var docs = [];
 	var positions = [];
 
-	// try and do an index search for each key, if it's possible
+	// index search
 	for (var key in query) {
 
 		// convert regex operator searches to native javascript RegExp
@@ -203,7 +211,12 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 			// check each value and look for a match
 			for (var c=0; c<this.indexes[key].values.length; c++) {
 
-				if (this.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && this.indexes[key].values[c].value.search(query[key]) > -1)) {
+				if (op_search === true) {
+
+					// there's no operator index searches currently
+					//console.log('index operator search unsupported', query[key]);
+				
+				} else if (this.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && this.indexes[key].values[c].value.search(query[key]) > -1)) {
 					// this is a string or regex search
 					// found a matching value, add all these documents to docs
 					for (var n=0; n<this.indexes[key].values[c].positions.length; n++) {
@@ -239,12 +252,6 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 						positions.push([this.indexes[key].values[c].positions[n], docs.length-1]);
 
 					}
-
-				} else if (op_search === true) {
-
-					// this is just a placeholder, there's no operator index searches other than $regex currently
-					//console.log('index operator search unsupported', query[key]);
-				
 				}
 			}
 
@@ -261,7 +268,6 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 	// if there are any remaining keys, do a deep search using them
 	// meaning search by the fields that were not indexed
-	// _id is also searched for here
 	if (Object.keys(query).length > 0) {
 
 		for (var c=0; c<this.docs.length; c++) {
@@ -490,7 +496,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 				// add the document
 				var t_doc = this.docs[c];
-				// add the relevance, the number of matched fields
+				// add the relevance, the number of matched fields or operator matches
 				t_doc._relevance = 1;
 				// add relevance_mod that is only used for $fulltext
 				t_doc._relevance += relevance_mod;
@@ -504,9 +510,9 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 	}
 
 	if (require_all_keys) {
-		// this is the default, effectively performing a logical AND for each key
-		// if you set this to false, then you would get results for keys that don't match
-		// and you would use the relevance field on each document
+		// this is the default, a logical AND with all keys
+		// if you set this to false, it would be a logical OR with all keys
+		// only one would need to match
 		var c = docs.length-1;
 		while (c >= 0) {
 			if (docs[c]._relevance != keys_length) {
