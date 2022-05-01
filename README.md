@@ -75,7 +75,7 @@ mydb.find({}, false);
 // lowest_first - A0-Z10
 
 // returns an array containing sorted documents
-mydb.sort({lat:'highest_first'}), docs);
+mydb.sort({lat: 'highest_first'}), docs);
 ```
 
 # limiting the number of results
@@ -116,7 +116,7 @@ mydb.skip(1, docs);
 // third argument
 // options sets the available options for the update
 {multi: false} // (default false) updates multiple documents if true
-{upsert:false} // (default false) adds a new document if no existing document matches if true
+{upsert: false} // (default false) adds a new document if no existing document matches if true
 ```
 
 ```javascript
@@ -195,9 +195,6 @@ mydb.lock();
 // unlock the database
 mydb.unlock();
 ```
-
-# npm
-`npm install sdbjs`
 
 # an example showing everything
 `node example.js`
