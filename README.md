@@ -21,9 +21,7 @@ var mydb = new sdb('/path/to/my.db');
 var doc = {planet: 'Earth',
 	ocean: 'Gulf of Mexico',
 	lat: 25,
-	lon: -90,
-	max_width_km: 1500,
-	surface_area_km_2: 1550000,
+	lon: -90
 };
 
 mydb.insert(doc);
@@ -98,7 +96,7 @@ mydb.skip(1, docs);
 ```javascript
 // first argument
 // query is the same kind of query used with find or count
-{}
+{key: 'value'}
 ```
 
 ```javascript
