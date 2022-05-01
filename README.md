@@ -178,8 +178,8 @@ mydb.save('my.db');
 > Normally nosql engineers shard the data at the alphabet level and use replicas.
 > That is easy to do with SDB, especially in English.
 > 
-> The issue is that if shards spend a lot of time updating all the data
-> or need to join data but don't have copies of it resulting in heavy shard traffic.
+> The issue is that if shards need to update all the data
+> or need to join data without local copies of it, heavy shard traffic must occur.
 > 
 > sdb passes along a function allowing
 > the user to lock and unlock their own database.
