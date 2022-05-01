@@ -1,7 +1,7 @@
 # SDB - a database in js that operates in memory and provides indexes, range searches, regex searches and fulltext searches
 
-# Having Problems?
-Please file a bug report if you find a problem.
+# support
+File an issue in this Github repository if you find a problem.
 
 # sdb, the right database
 ```javascript
@@ -153,7 +153,7 @@ mydb.index(field, true, true);
 mydb.remove_index('field');
 ```
 
-# Write the db to disk
+# write the db to disk
 
 Disk writes only happen when forced them.
 
@@ -199,5 +199,5 @@ mydb.unlock();
 # an example showing everything
 `node example.js`
 
-# License
+# license
 MIT
