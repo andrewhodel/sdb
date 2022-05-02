@@ -882,37 +882,24 @@ sdb.prototype.update = function(query, update, options=null) {
 	var updated_docs = [];
 
 	// search through the keys and find matching documents
-	var num_matching_keys = 0;
 	var num_updated_docs = 0;
 	for (var c=0; c<this.docs.length; c++) {
-		var updated_doc = {};
-		num_matching_keys = 0;
-		for (var key in query) {
-			for (var doc_key in this.docs[c]) {
 
-				if (this.docs[c][doc_key] == null || this.docs[c][doc_key] == undefined) {
-					// exclude fields that have a key but a value of undefined or null
-					continue;
-				}
-				if (this.docs[c][doc_key].length > 500) {
-					// this is too long to search by, might be a base64 or a buffer or something
-					// exclude it
-					continue;
-				}
-				if (doc_key == key) {
-					// check if the values of the query and this field in the document match
-					if (this.docs[c][doc_key] == query[key]) {
-						num_matching_keys++;
-					}
-				}
+		// returns match, relevance_mod, has_fulltext, all_query_fields_match
+		var deep_find_doc_result = deep_find_in_doc(query, this.docs[c]);
+		var match = deep_find_doc_result[0];
+		var relevance_mod = deep_find_doc_result[1];
+		var all_query_fields_match = deep_find_doc_result[3];
 
-			}
+		if ((relevance_mod > 0 || match > 0) && all_query_fields_match === true) {
+			// all_query_fields_match means safe to modify/delete
 
-		}
+			// relevance_mod > 0 is a $fulltext search match
+			// match > 0 is the number of matching fields
 
-		// now check if all the keys matched
-		// if they do not all match then it is not a match
-		if (num_matching_keys == keys_length) {
+			num_updated_docs++;
+
+			var updated_doc;
 
 			if (is_modifier) {
 				// this is a modifier update

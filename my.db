@@ -1,1 +1,1 @@
-{"docs":[{"a_simple_field":"a_simple_value","_id":"04f3415d5eaa431c0a345932c55281d61286c2d3"},{"second_simple_field":"a second_simple_value","_id":"3ee248cf018cec6a5990a054dd4ded8fe74fbd8e"},{"_id":"4f2acfde0a40da4b3974c795114c431696b24731","total":100}],"indexes":{},"canUse":0}
+{"docs":[{"a_simple_field":"a_simple_value","_id":"69cdc9c6b0fabd0d46dda59ec594791147095271"},{"second_simple_field":"a second_simple_value","_id":"8d7cbbcc9a3fb18630cf8bdaa47d4917790874d4"},{"_id":"fa346a8550ec9b1bbb4b54fe50cede905100bedc","total":100}],"indexes":{},"canUse":0}
