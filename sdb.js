@@ -529,8 +529,13 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 			var match = deep_find_doc_result[0];
 			var relevance_mod = deep_find_doc_result[1];
 			has_fulltext = deep_find_doc_result[2];
+			var all_query_fields_match = deep_find_doc_result[3];
 
-			if (relevance_mod > 0 || match > 0) {
+			if ((relevance_mod > 0 || match > 0) && (require_all_keys === all_query_fields_match)) {
+
+				// this document matches the require_all_keys argument passed to find()
+
+				// AND
 
 				// relevance_mod > 0 is a $fulltext search match
 				// match > 0 is the number of fields matched
@@ -567,20 +572,6 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 			}
 
-		}
-	}
-
-	if (require_all_keys && has_fulltext === false) {
-		// this is the default, a logical AND with all keys
-		// if you set this to false, it would be a logical OR with all keys
-		// only one would need to match
-		// as long as there are no $fulltext keys as they require non exact matches
-		var c = docs.length-1;
-		while (c >= 0) {
-			if (docs[c]._relevance != keys_length) {
-				docs.splice(c, 1);
-			}
-			c--;
 		}
 	}
 
