@@ -128,36 +128,10 @@ sdb.prototype.insert = function(doc, already_blocking=false) {
 
 };
 
-var index_find = function() {
+// must be a prototype child to access the this object of the module
+var index_find = function(sdb_object, docs, positions, query) {
 
-}
-
-var deep_find = function() {
-
-}
-
-sdb.prototype.find = function(query, require_all_keys=true) {
-	// query is an object of what to search by
-	// has regex is an object that says what fields are a regex
-	// you cannot just use instanceof RegExp because it might be part of a normal string
-
-	// wait for access to the db
-	while (this.canUse == 0) {
-		// wait
-	}
-	this.canUse = 0;
-
-	var keys_length = Object.keys(query).length;
-	if (keys_length == 0) {
-		// return the whole db as a deep copy
-		var ret_val = JSON.parse(JSON.stringify(this.docs));
-		// release the atomic hold
-		this.canUse = 1;
-		return ret_val;
-	}
-
-	var docs = [];
-	var positions = [];
+	// returns [docs, positions, query]
 
 	// index search
 	for (var key in query) {
@@ -186,7 +160,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 		}
 
 		var do_index_search = false;
-		if (typeof(this.indexes[key]) == 'object') {
+		if (typeof(sdb_object.indexes[key]) == 'object') {
 			// an index exists for this key
 			do_index_search = true;
 		}
@@ -209,21 +183,21 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 			}
 
 			// check each value and look for a match
-			for (var c=0; c<this.indexes[key].values.length; c++) {
+			for (var c=0; c<sdb_object.indexes[key].values.length; c++) {
 
 				if (op_search === true) {
 
 					// there's no operator index searches currently
 					//console.log('index operator search unsupported', query[key]);
 				
-				} else if (this.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && this.indexes[key].values[c].value.search(query[key]) > -1)) {
+				} else if (sdb_object.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && sdb_object.indexes[key].values[c].value.search(query[key]) > -1)) {
 					// this is a string or regex search
 					// found a matching value, add all these documents to docs
-					for (var n=0; n<this.indexes[key].values[c].positions.length; n++) {
+					for (var n=0; n<sdb_object.indexes[key].values[c].positions.length; n++) {
 						// ensure the position isn't already added
 						var existing_position = false;
 						for (var l=0; l<positions.length; l++) {
-							if (positions[l][0] == this.indexes[key].values[c].positions[n]) {
+							if (positions[l][0] == sdb_object.indexes[key].values[c].positions[n]) {
 								// position is already found
 								existing_position = true;
 								// increase the relevance of the document
@@ -236,20 +210,20 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 							continue;
 						}
 
-						var t_doc = this.docs[this.indexes[key].values[c].positions[n]];
+						var t_doc = sdb_object.docs[sdb_object.indexes[key].values[c].positions[n]];
 						// add the relevance, the number of matched fields
 						try {
 							t_doc._relevance = 1;
 						} catch (err) {
 							console.log(err);
 							console.log('t_doc', t_doc);
-							console.log('this.docs.length', this.docs.length);
-							console.log('this.indexes[key].values[c]', this.indexes[key].values[c]);
-							console.log('this.indexes[key].values[c].positions[n]', this.indexes[key].values[c].positions[n]);
+							console.log('sdb_object.docs.length', sdb_object.docs.length);
+							console.log('sdb_object.indexes[key].values[c]', sdb_object.indexes[key].values[c]);
+							console.log('sdb_object.indexes[key].values[c].positions[n]', sdb_object.indexes[key].values[c].positions[n]);
 							process.exit();
 						}
 						docs.push(t_doc);
-						positions.push([this.indexes[key].values[c].positions[n], docs.length-1]);
+						positions.push([sdb_object.indexes[key].values[c].positions[n], docs.length-1]);
 
 					}
 				}
@@ -265,6 +239,43 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 		}
 	}
+
+	return [docs, positions, query];
+
+}
+
+var deep_find_in_doc = function() {
+
+}
+
+sdb.prototype.find = function(query, require_all_keys=true) {
+	// query is an object of what to search by
+	// has regex is an object that says what fields are a regex
+	// you cannot just use instanceof RegExp because it might be part of a normal string
+
+	// wait for access to the db
+	while (this.canUse == 0) {
+		// wait
+	}
+	this.canUse = 0;
+
+	var keys_length = Object.keys(query).length;
+	if (keys_length == 0) {
+		// return the whole db as a deep copy
+		var ret_val = JSON.parse(JSON.stringify(this.docs));
+		// release the atomic hold
+		this.canUse = 1;
+		return ret_val;
+	}
+
+	var docs = [];
+	var positions = [];
+
+	// docs, positions, query are returned
+	var index_return_array = index_find(this, docs, positions, query);
+	docs = index_return_array[0];
+	positions = index_return_array[1];
+	query = index_return_array[2];
 
 	// if there are any remaining keys, do a deep search using them
 	// meaning search by the fields that were not indexed
@@ -827,10 +838,6 @@ sdb.prototype.update = function(query, update, options=null) {
 			is_modifier = 1;
 			break;
 		}
-	}
-
-	if (is_modifier == 1) {
-		// remove any keys from update that are not valid
 	}
 
 	var updated_docs = [];
