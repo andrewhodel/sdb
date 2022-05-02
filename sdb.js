@@ -244,7 +244,215 @@ var index_find = function(sdb_object, docs, positions, query) {
 
 }
 
-var deep_find_in_doc = function() {
+var deep_find_in_doc = function(query, doc) {
+	// returns match, relevance_mod, has_fulltext
+	var match = 0;
+	var relevance_mod = 0;
+	var has_fulltext = false;
+
+	for (var key in query) {
+
+		if (query[key]['$undef'] !== undefined) {
+
+			// the field does not exist in the document
+			// make sure there is no $undef operator for this field
+			if (doc[key] === undefined) {
+				match++;
+				//console.log('$undef match', key);
+			}
+
+		}
+
+		for (var doc_key in doc) {
+
+			if (doc_key == key) {
+
+				if (doc[doc_key] == query[key] || (query[key] instanceof RegExp && doc[doc_key].search(query[key]) > -1)) {
+
+					//console.log('field search in ' + key);
+
+					// this is an exact string match or a regex match
+					match = -1;
+
+				} else if (query[key] instanceof Object) {
+					// test if the search key is an operator
+
+					//console.log('operator search', query[key]);
+
+					// do an operator search
+					for (var op in query[key]) {
+
+						if (op == '$gt') {
+							// test if the doc's field's value is greater than the search value
+							if (Number(doc[doc_key]) > Number(query[key][op])) {
+								match++;
+							}
+						} else if (op == '$gte') {
+							// test if the doc's field's value is greater than or equal to the search value
+							if (Number(doc[doc_key]) >= Number(query[key][op])) {
+								match++;
+							}
+						} else if (op == '$lt') {
+							// test if the doc's field's value is less than the search value
+							if (Number(doc[doc_key]) < Number(query[key][op])) {
+								match++;
+							}
+						} else if (op == '$lte') {
+							// test if the doc's field's value is less than or equal to the search value
+							if (Number(doc[doc_key]) <= Number(query[key][op])) {
+								match++;
+							}
+						} else if (op == '$ne') {
+							// test if the doc's field's value is not equal to the search value
+							// works for numbers and strings
+							if (doc[doc_key] != query[key][op]) {
+								match++;
+							}
+						} else if (op == '$mod') {
+							// test if the doc's field's value modulus the search value equals 0
+							if (Number(doc[doc_key]) % Number(query[key][op]) === 0) {
+								match++;
+							}
+
+						} else if (op == '$fulltext') {
+							// perform a fulltext search and return how relevant each document is
+
+							// first split up each of the words in the search query using the space character
+							var spaced = query[key][op].split(' ');
+
+							// remove simple words from spaced, these are of no use in a full text search
+							var simple = ['i', 'you', 'the', 'this', 'is', 'of', 'a', 'we', 'us', 'it', 'them', 'they'];
+							for (var r=spaced.length-1; r>=0; r--) {
+								for (var n=0; n<simple.length; n++) {
+									if (spaced[r].toLowerCase() == simple[n] || spaced[r].length == 1) {
+										spaced.splice(r, 1);
+										break;
+									}
+								}
+							}
+
+							// now loop through the field and test how many times each word was found
+							var words = doc[doc_key].split(' ');
+							for (var r=0; r<words.length; r++) {
+								for (var n=0; n<spaced.length; n++) {
+									if (words[r].toLowerCase() == spaced[n].toLowerCase()) {
+
+										// increase the relevance by one divided by the total searched words found
+										relevance_mod += (1/words.length);
+										has_fulltext = true;
+
+									}
+								}
+							}
+
+						}
+
+					}
+
+					if (Object.keys(query[key]).length == match && match > 0) {
+						// every operator search matched for a comparison search
+						match = -1;
+					}
+
+				}
+
+			}
+
+		}
+
+	}
+
+	// this allows searching with {$op: {field: 1, field1: 1}}
+	// or use the code above to search like {field: {$lt: 10, $gt: 1}}
+
+	/*
+
+	for (var key in query) {
+
+		if (query[key] instanceof Object) {
+
+			// do an operator search
+			for (var op in query[key]) {
+
+				if (key == '$gt') {
+					// test if the doc's field's value is greater than the search value
+					if (Number(doc[op]) > Number(query[key][op])) {
+						match++;
+					}
+				} else if (key == '$gte') {
+					// test if the doc's field's value is greater than or equal to the search value
+					if (Number(doc[op]) >= Number(query[key][op])) {
+						match++;
+					}
+				} else if (key == '$lt') {
+					// test if the doc's field's value is less than the search value
+					if (Number(doc[op]) < Number(query[key][op])) {
+						match++;
+					}
+				} else if (key == '$lte') {
+					// test if the doc's field's value is less than or equal to the search value
+					if (Number(doc[op]) <= Number(query[key][op])) {
+						match++;
+					}
+
+				} else if (key == '$undef') {
+					// test if the field is not defined
+					if (doc[op] === undefined) {
+						match++;
+					}
+
+				} else if (op == '$fulltext') {
+					// perform a fulltext search and return how relevant each document is
+
+					// first split up each of the words in the search query using the space character
+					var spaced = query[key][op].split(' ');
+
+					// remove simple words from spaced, these are of no use in a full text search
+					var simple = ['i', 'you', 'the', 'this', 'is', 'of', 'a', 'we', 'us', 'it', 'them', 'they'];
+					for (var r=spaced.length-1; r>=0; r--) {
+						for (var n=0; n<simple.length; n++) {
+							if (spaced[r].toLowerCase() == simple[n] || spaced[r].length == 1) {
+								spaced.splice(r, 1);
+								break;
+							}
+						}
+					}
+
+					// now loop through the field and test how many times each word was found
+					var words = doc[key].split(' ');
+					for (var r=0; r<words.length; r++) {
+						for (var n=0; n<spaced.length; n++) {
+							if (words[r].toLowerCase() == spaced[n].toLowerCase()) {
+
+								// increase the relevance by one divided by the total searched words found
+								relevance_mod += (1/words.length);
+								has_fulltext = true;
+
+							}
+
+						}
+					}
+
+				}
+
+			}
+
+		} else {
+
+			// exact match test
+			if (doc[key] == query[key] || (query[key] instanceof RegExp && doc[key].search(query[key]) > -1)) {
+				// this is an exact match or a regex match
+				match = -1;
+			}
+
+		}
+
+	}
+
+	// end operator/field inversion
+	*/
+
+	return [match, relevance_mod, has_fulltext];
 
 }
 
@@ -285,210 +493,11 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 		for (var c=0; c<this.docs.length; c++) {
 
-			var match = 0;
-			var relevance_mod = 0;
-
-			for (var key in query) {
-
-				if (query[key]['$undef'] !== undefined) {
-
-					// the field does not exist in the document
-					// make sure there is no $undef operator for this field
-					if (this.docs[c][key] === undefined) {
-						match++;
-						//console.log('$undef match', key);
-					}
-
-				}
-
-				for (var doc_key in this.docs[c]) {
-
-					if (doc_key == key) {
-
-						if (this.docs[c][doc_key] == query[key] || (query[key] instanceof RegExp && this.docs[c][doc_key].search(query[key]) > -1)) {
-
-							//console.log('field search in ' + key);
-
-							// this is an exact string match or a regex match
-							match = -1;
-
-						} else if (query[key] instanceof Object) {
-							// test if the search key is an operator
-
-							//console.log('operator search', query[key]);
-
-							// do an operator search
-							for (var op in query[key]) {
-
-								if (op == '$gt') {
-									// test if the doc's field's value is greater than the search value
-									if (Number(this.docs[c][doc_key]) > Number(query[key][op])) {
-										match++;
-									}
-								} else if (op == '$gte') {
-									// test if the doc's field's value is greater than or equal to the search value
-									if (Number(this.docs[c][doc_key]) >= Number(query[key][op])) {
-										match++;
-									}
-								} else if (op == '$lt') {
-									// test if the doc's field's value is less than the search value
-									if (Number(this.docs[c][doc_key]) < Number(query[key][op])) {
-										match++;
-									}
-								} else if (op == '$lte') {
-									// test if the doc's field's value is less than or equal to the search value
-									if (Number(this.docs[c][doc_key]) <= Number(query[key][op])) {
-										match++;
-									}
-								} else if (op == '$ne') {
-									// test if the doc's field's value is not equal to the search value
-									// works for numbers and strings
-									if (this.docs[c][doc_key] != query[key][op]) {
-										match++;
-									}
-								} else if (op == '$mod') {
-									// test if the doc's field's value modulus the search value equals 0
-									if (Number(this.docs[c][doc_key]) % Number(query[key][op]) === 0) {
-										match++;
-									}
-
-								} else if (op == '$fulltext') {
-									// perform a fulltext search and return how relevant each document is
-
-									// first split up each of the words in the search query using the space character
-									var spaced = query[key][op].split(' ');
-
-									// remove simple words from spaced, these are of no use in a full text search
-									var simple = ['i', 'you', 'the', 'this', 'is', 'of', 'a', 'we', 'us', 'it', 'them', 'they'];
-									for (var r=spaced.length-1; r>=0; r--) {
-										for (var n=0; n<simple.length; n++) {
-											if (spaced[r].toLowerCase() == simple[n] || spaced[r].length == 1) {
-												spaced.splice(r, 1);
-												break;
-											}
-										}
-									}
-
-									// now loop through the field and test how many times each word was found
-									var words = this.docs[c][doc_key].split(' ');
-									for (var r=0; r<words.length; r++) {
-										for (var n=0; n<spaced.length; n++) {
-											if (words[r].toLowerCase() == spaced[n].toLowerCase()) {
-
-												// increase the relevance by one divided by the total searched words found
-												relevance_mod += (1/words.length);
-												has_fulltext = true;
-
-											}
-										}
-									}
-
-								}
-
-							}
-
-							if (Object.keys(query[key]).length == match && match > 0) {
-								// every operator search matched for a comparison search
-								match = -1;
-							}
-
-						}
-
-					}
-
-				}
-
-			}
-
-			// this allows searching with {$op: {field: 1, field1: 1}}
-			// or use the code above to search like {field: {$lt: 10, $gt: 1}}
-
-			/*
-
-			for (var key in query) {
-
-				if (query[key] instanceof Object) {
-
-					// do an operator search
-					for (var op in query[key]) {
-
-						if (key == '$gt') {
-							// test if the doc's field's value is greater than the search value
-							if (Number(this.docs[c][op]) > Number(query[key][op])) {
-								match++;
-							}
-						} else if (key == '$gte') {
-							// test if the doc's field's value is greater than or equal to the search value
-							if (Number(this.docs[c][op]) >= Number(query[key][op])) {
-								match++;
-							}
-						} else if (key == '$lt') {
-							// test if the doc's field's value is less than the search value
-							if (Number(this.docs[c][op]) < Number(query[key][op])) {
-								match++;
-							}
-						} else if (key == '$lte') {
-							// test if the doc's field's value is less than or equal to the search value
-							if (Number(this.docs[c][op]) <= Number(query[key][op])) {
-								match++;
-							}
-
-						} else if (key == '$undef') {
-							// test if the field is not defined
-							if (this.docs[c][op] === undefined) {
-								match++;
-							}
-
-						} else if (op == '$fulltext') {
-							// perform a fulltext search and return how relevant each document is
-
-							// first split up each of the words in the search query using the space character
-							var spaced = query[key][op].split(' ');
-
-							// remove simple words from spaced, these are of no use in a full text search
-							var simple = ['i', 'you', 'the', 'this', 'is', 'of', 'a', 'we', 'us', 'it', 'them', 'they'];
-							for (var r=spaced.length-1; r>=0; r--) {
-								for (var n=0; n<simple.length; n++) {
-									if (spaced[r].toLowerCase() == simple[n] || spaced[r].length == 1) {
-										spaced.splice(r, 1);
-										break;
-									}
-								}
-							}
-
-							// now loop through the field and test how many times each word was found
-							var words = this.docs[c][key].split(' ');
-							for (var r=0; r<words.length; r++) {
-								for (var n=0; n<spaced.length; n++) {
-									if (words[r].toLowerCase() == spaced[n].toLowerCase()) {
-
-										// increase the relevance by one divided by the total searched words found
-										relevance_mod += (1/words.length);
-										has_fulltext = true;
-
-									}
-
-								}
-							}
-
-						}
-
-					}
-
-				} else {
-
-					// exact match test
-					if (this.docs[c][key] == query[key] || (query[key] instanceof RegExp && this.docs[c][key].search(query[key]) > -1)) {
-						// this is an exact match or a regex match
-						match = -1;
-					}
-
-				}
-
-			}
-
-			// end operator/field inversion
-			*/
+			// returns match, relevance_mod, has_fulltext
+			var deep_find_doc_result = deep_find_in_doc(query, this.docs[c]);
+			var match = deep_find_doc_result[0];
+			var relevance_mod = deep_find_doc_result[1];
+			has_fulltext = deep_find_doc_result[2];
 
 			if (match == -1 || relevance_mod > 0 || match > 0) {
 
