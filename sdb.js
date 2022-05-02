@@ -270,6 +270,8 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 	// meaning search by the fields that were not indexed
 	if (Object.keys(query).length > 0) {
 
+		var has_fulltext = false;
+
 		for (var c=0; c<this.docs.length; c++) {
 
 			var match = 0;
@@ -361,7 +363,11 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 									for (var r=0; r<words.length; r++) {
 										for (var n=0; n<spaced.length; n++) {
 											if (words[r].toLowerCase() == spaced[n].toLowerCase()) {
-												relevance_mod++;
+
+												// increase the relevance by one divided by the total searched words found
+												relevance_mod += (1/words.length);
+												has_fulltext = true;
+
 											}
 										}
 									}
@@ -444,8 +450,13 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 							for (var r=0; r<words.length; r++) {
 								for (var n=0; n<spaced.length; n++) {
 									if (words[r].toLowerCase() == spaced[n].toLowerCase()) {
-										relevance_mod++;
+
+										// increase the relevance by one divided by the total searched words found
+										relevance_mod += (1/words.length);
+										has_fulltext = true;
+
 									}
+
 								}
 							}
 
@@ -471,7 +482,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 			if (match == -1 || relevance_mod > 0 || match > 0) {
 
 				// match == -1 is an exact match or a $regex match
-				// relevant_mod > 0 is a $fulltext search match
+				// relevance_mod > 0 is a $fulltext search match
 				// match > 0 is a match of $lt, $lte, $gt and $gte
 
 				// check if this document has already been found
@@ -482,8 +493,10 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 						existing_position = true;
 						// increase the relevance of the document
 						if (relevance_mod == 0) {
+							// this is a non $fulltext match
 							docs[positions[l][1]]._relevance++;
 						} else {
+							// this is a $fulltext match, the relevance is a float value
 							docs[positions[l][1]]._relevance += relevance_mod;
 						}
 						break;
@@ -496,10 +509,8 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 				// add the document
 				var t_doc = this.docs[c];
-				// add the relevance, the number of matched fields or operator matches
-				t_doc._relevance = 1;
-				// add relevance_mod that is only used for $fulltext
-				t_doc._relevance += relevance_mod;
+				// add the relevance
+				t_doc._relevance = relevance_mod;
 
 				docs.push(t_doc);
 				positions.push([c, docs.length-1]);
@@ -509,10 +520,11 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 		}
 	}
 
-	if (require_all_keys) {
+	if (require_all_keys && has_fulltext === false) {
 		// this is the default, a logical AND with all keys
 		// if you set this to false, it would be a logical OR with all keys
 		// only one would need to match
+		// as long as there are no $fulltext keys as they require non exact matches
 		var c = docs.length-1;
 		while (c >= 0) {
 			if (docs[c]._relevance != keys_length) {
