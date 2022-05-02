@@ -489,8 +489,7 @@ var deep_find_in_doc = function(query, doc) {
 
 sdb.prototype.find = function(query, require_all_keys=true) {
 	// query is an object of what to search by
-	// has regex is an object that says what fields are a regex
-	// you cannot just use instanceof RegExp because it might be part of a normal string
+	// require_all_keys is true by default and requires all query keys to be matched
 
 	// wait for access to the db
 	while (this.canUse == 0) {
