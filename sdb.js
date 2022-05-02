@@ -245,10 +245,14 @@ var index_find = function(sdb_object, docs, positions, query) {
 }
 
 var deep_find_in_doc = function(query, doc) {
-	// returns match, relevance_mod, has_fulltext
+	// returns match, relevance_mod, has_fulltext, all_query_fields_match
 	var match = 0;
 	var relevance_mod = 0;
 	var has_fulltext = false;
+	var all_query_fields_match = false;
+
+	var query_len = Object.keys(query).length;
+	var matched_field_count = 0;
 
 	for (var key in query) {
 
@@ -258,6 +262,7 @@ var deep_find_in_doc = function(query, doc) {
 			// make sure there is no $undef operator for this field
 			if (doc[key] === undefined) {
 				match++;
+				matched_field_count++;
 				//console.log('$undef match', key);
 			}
 
@@ -272,45 +277,53 @@ var deep_find_in_doc = function(query, doc) {
 					//console.log('field search in ' + key);
 
 					// this is an exact string match or a regex match
-					match = -1;
+					match++;;
+					matched_field_count++;
 
 				} else if (query[key] instanceof Object) {
 					// test if the search key is an operator
 
 					//console.log('operator search', query[key]);
 
+					var op_field_match = false;
 					// do an operator search
 					for (var op in query[key]) {
 
 						if (op == '$gt') {
 							// test if the doc's field's value is greater than the search value
 							if (Number(doc[doc_key]) > Number(query[key][op])) {
+								op_field_match = true;
 								match++;
 							}
 						} else if (op == '$gte') {
 							// test if the doc's field's value is greater than or equal to the search value
 							if (Number(doc[doc_key]) >= Number(query[key][op])) {
+								op_field_match = true;
 								match++;
 							}
 						} else if (op == '$lt') {
 							// test if the doc's field's value is less than the search value
 							if (Number(doc[doc_key]) < Number(query[key][op])) {
+								op_field_match = true;
 								match++;
 							}
 						} else if (op == '$lte') {
 							// test if the doc's field's value is less than or equal to the search value
 							if (Number(doc[doc_key]) <= Number(query[key][op])) {
+								op_field_match = true;
 								match++;
 							}
 						} else if (op == '$ne') {
 							// test if the doc's field's value is not equal to the search value
 							// works for numbers and strings
 							if (doc[doc_key] != query[key][op]) {
+								op_field_match = true;
 								match++;
 							}
 						} else if (op == '$mod') {
 							// test if the doc's field's value modulus the search value equals 0
 							if (Number(doc[doc_key]) % Number(query[key][op]) === 0) {
+								op_field_match = true;
 								match++;
 							}
 
@@ -341,6 +354,8 @@ var deep_find_in_doc = function(query, doc) {
 										relevance_mod += (1/words.length);
 										has_fulltext = true;
 
+										op_field_match = true;
+
 									}
 								}
 							}
@@ -349,9 +364,8 @@ var deep_find_in_doc = function(query, doc) {
 
 					}
 
-					if (Object.keys(query[key]).length == match && match > 0) {
-						// every operator search matched for a comparison search
-						match = -1;
+					if (op_field_match === true) {
+						matched_field_count++;
 					}
 
 				}
@@ -371,33 +385,39 @@ var deep_find_in_doc = function(query, doc) {
 
 		if (query[key] instanceof Object) {
 
+			var op_field_match = false;
 			// do an operator search
 			for (var op in query[key]) {
 
 				if (key == '$gt') {
 					// test if the doc's field's value is greater than the search value
 					if (Number(doc[op]) > Number(query[key][op])) {
+						op_field_match = true;
 						match++;
 					}
 				} else if (key == '$gte') {
 					// test if the doc's field's value is greater than or equal to the search value
 					if (Number(doc[op]) >= Number(query[key][op])) {
+						op_field_match = true;
 						match++;
 					}
 				} else if (key == '$lt') {
 					// test if the doc's field's value is less than the search value
 					if (Number(doc[op]) < Number(query[key][op])) {
+						op_field_match = true;
 						match++;
 					}
 				} else if (key == '$lte') {
 					// test if the doc's field's value is less than or equal to the search value
 					if (Number(doc[op]) <= Number(query[key][op])) {
+						op_field_match = true;
 						match++;
 					}
 
 				} else if (key == '$undef') {
 					// test if the field is not defined
 					if (doc[op] === undefined) {
+						op_field_match = true;
 						match++;
 					}
 
@@ -428,6 +448,8 @@ var deep_find_in_doc = function(query, doc) {
 								relevance_mod += (1/words.length);
 								has_fulltext = true;
 
+								op_field_match = true;
+
 							}
 
 						}
@@ -437,12 +459,17 @@ var deep_find_in_doc = function(query, doc) {
 
 			}
 
+			if (op_field_match === true) {
+				matched_field_count++;
+			}
+
 		} else {
 
 			// exact match test
 			if (doc[key] == query[key] || (query[key] instanceof RegExp && doc[key].search(query[key]) > -1)) {
 				// this is an exact match or a regex match
-				match = -1;
+				match++;
+				matched_field_count++;
 			}
 
 		}
@@ -452,7 +479,11 @@ var deep_find_in_doc = function(query, doc) {
 	// end operator/field inversion
 	*/
 
-	return [match, relevance_mod, has_fulltext];
+	if (matched_field_count == query_len) {
+		all_query_fields_match = true;
+	}
+
+	return [match, relevance_mod, has_fulltext, all_query_fields_match];
 
 }
 
@@ -493,17 +524,16 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 		for (var c=0; c<this.docs.length; c++) {
 
-			// returns match, relevance_mod, has_fulltext
+			// returns match, relevance_mod, has_fulltext, all_query_fields_match
 			var deep_find_doc_result = deep_find_in_doc(query, this.docs[c]);
 			var match = deep_find_doc_result[0];
 			var relevance_mod = deep_find_doc_result[1];
 			has_fulltext = deep_find_doc_result[2];
 
-			if (match == -1 || relevance_mod > 0 || match > 0) {
+			if (relevance_mod > 0 || match > 0) {
 
-				// match == -1 is an exact match or a $regex match
 				// relevance_mod > 0 is a $fulltext search match
-				// match > 0 is a match of $lt, $lte, $gt and $gte
+				// match > 0 is the number of fields matched
 
 				// check if this document has already been found
 				var existing_position = false;
@@ -1042,36 +1072,20 @@ sdb.prototype.remove = function(query) {
 	var num_removed = 0;
 	var removed_positions = [];
 
-	// search through the keys and find matching documents
-	var num_matching_keys = 0;
 	for (var c=this.docs.length-1; c>=0; c--) {
-		num_matching_keys = 0;
-		for (var key in query) {
-			for (var doc_key in this.docs[c]) {
 
-				if (this.docs[c][doc_key] == null || this.docs[c][doc_key] == undefined) {
-					// exclude fields that have a key but a value of undefined or null
-					continue;
-				}
-				if (this.docs[c][doc_key].length > 500) {
-					// this is too long to search by, might be a base64 or a buffer or something
-					// exclude it
-					continue;
-				}
-				if (doc_key == key) {
-					// check if the values of the query and this field in the document match
-					if (this.docs[c][doc_key] == query[key]) {
-						num_matching_keys++;
-					}
-				}
+		// returns match, relevance_mod, has_fulltext, all_query_fields_match
+		var deep_find_doc_result = deep_find_in_doc(query, this.docs[c]);
+		var match = deep_find_doc_result[0];
+		var relevance_mod = deep_find_doc_result[1];
+		var all_query_fields_match = deep_find_doc_result[3];
 
-			}
+		if ((relevance_mod > 0 || match > 0) && all_query_fields_match === true) {
+			// all_query_fields_match means safe to modify/delete
 
-		}
+			// relevance_mod > 0 is a $fulltext search match
+			// match > 0 is the number of matching fields
 
-		// now check if all the keys matched
-		// if they do not all match then it is not a match
-		if (num_matching_keys == keys_length) {
 			num_removed++;
 
 			// need to remove this document from all indexes with a matching position
@@ -1114,7 +1128,7 @@ sdb.prototype.remove = function(query) {
 		// take into account the removed_positions array and that documents
 		// stored in it were removed with a reverse loop
 		//
-		// so if 2 documents were removed, one with position 4 and one with position 2
+		// if 2 documents were removed, one with position 4 and one with position 2
 		// removed_positions would look like this: [4, 2]
 		//
 		// first decrement every index position that is >= 4 by 1
