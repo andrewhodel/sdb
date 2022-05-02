@@ -12,7 +12,7 @@ var doc = mydb.insert({second_simple_field: 'second_simple_value'});
 console.log(util.inspect(doc, true, 10, true));
 
 console.log('\nmydb.update({second_simple_field: \'2nd second_simple_value\'}, {$set: {second_simple_field: \'2nd second_simple_value\'}}, {upsert: true})');
-var doc = mydb.update({second_simple_field: '2nd second_simple_value'}, {$set: {second_simple_field: '2nd second_simple_value'}}, {upsert: true});
+var doc = mydb.update({second_simple_field: '2nd second_simple_value'}, {$set: {second_simple_field: '2nd second_simple_value'}, $add: {counter: 2}}, {upsert: true});
 console.log(util.inspect(doc, true, 10, true));
 
 console.log('\nmydb.find({})');
