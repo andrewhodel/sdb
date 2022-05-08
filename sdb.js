@@ -254,7 +254,7 @@ var deep_find_in_doc = function(query, doc) {
 	if (Object.keys(query).length === 0) {
 		// should return as a match every time
 		// there was no query
-		return [1, 1, 0, 1];
+		return [1, 1, false, true];
 	}
 
 	var query_len = Object.keys(query).length;
