@@ -251,6 +251,12 @@ var deep_find_in_doc = function(query, doc) {
 	var has_fulltext = false;
 	var all_query_fields_match = false;
 
+	if (Object.keys(query).length === 0) {
+		// should return as a match every time
+		// there was no query
+		return [1, 1, 0, 1];
+	}
+
 	var query_len = Object.keys(query).length;
 	var matched_field_count = 0;
 
