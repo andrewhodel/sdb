@@ -894,8 +894,6 @@ sdb.prototype.update = function(query, update, options=null) {
 			// relevance_mod > 0 is a $fulltext search match
 			// match > 0 is the number of matching fields
 
-			num_updated_docs++;
-
 			var updated_doc;
 
 			if (is_modifier) {
@@ -999,7 +997,7 @@ sdb.prototype.update = function(query, update, options=null) {
 
 		}
 
-		if (!options.multi && num_updated_docs == 1) {
+		if (options.multi === false && num_updated_docs === 1) {
 			// only update a single document
 			break;
 		}
