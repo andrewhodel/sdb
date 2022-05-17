@@ -136,6 +136,8 @@ var index_find = function(sdb_object, docs, positions, query) {
 	// index search
 	for (var key in query) {
 
+		var key_found_in_index = false;
+
 		// convert regex operator searches to native javascript RegExp
 		if (typeof(query[key]) == 'object') {
 			for (var op in query[key]) {
@@ -182,7 +184,7 @@ var index_find = function(sdb_object, docs, positions, query) {
 				op_search = true;
 			}
 
-			// check each value and look for a match
+			// check each index value and look for a match
 			for (var c=0; c<sdb_object.indexes[key].values.length; c++) {
 
 				if (op_search === true) {
@@ -191,9 +193,14 @@ var index_find = function(sdb_object, docs, positions, query) {
 					//console.log('index operator search unsupported', query[key]);
 				
 				} else if (sdb_object.indexes[key].values[c].value == query[key] || (query[key] instanceof RegExp && sdb_object.indexes[key].values[c].value.search(query[key]) > -1)) {
+
+					//console.log(key, sdb_object.indexes[key].values[c].value, query[key]);
+					key_found_in_index = true;
+
 					// this is a string or regex search
 					// found a matching value, add all these documents to docs
 					for (var n=0; n<sdb_object.indexes[key].values[c].positions.length; n++) {
+
 						// ensure the position isn't already added
 						var existing_position = false;
 						for (var l=0; l<positions.length; l++) {
@@ -229,11 +236,9 @@ var index_find = function(sdb_object, docs, positions, query) {
 				}
 			}
 
-			// remove the key from query
-			// there is no required deep search using this key, it was already indexed
-			if (op_search === false) {
-				// this conditional is required until op searches are supported for indexed fields
-				// only delete this key if this was not an op search field
+			if (op_search === false && key_found_in_index === true) {
+				// the key was not an op search
+				// and the index found a result
 				delete query[key];
 			}
 
@@ -528,6 +533,7 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 		var has_fulltext = false;
 
+		// search through all docs in the sdb database for this query
 		for (var c=0; c<this.docs.length; c++) {
 
 			// returns match, relevance_mod, has_fulltext, all_query_fields_match
@@ -575,6 +581,24 @@ sdb.prototype.find = function(query, require_all_keys=true) {
 
 				docs.push(t_doc);
 				positions.push([c, docs.length-1]);
+
+			} else {
+				// this doc was not matched in a deep search
+				if (require_all_keys === true) {
+					// remove it from the response docs, if it was found in an index
+					// because the rest of the query was not found in the deep search
+					// and all of it was required
+					var l = 0;
+					while (l < docs.length) {
+						// this is each doc found in the index search
+						if (docs[l]._id === this.docs[c]._id) {
+							docs.splice(l, 1);
+							break;
+						}
+						l++;
+					}
+
+				}
 
 			}
 
