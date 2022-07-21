@@ -267,15 +267,19 @@ var deep_find_in_doc = function(query, doc) {
 
 	for (var key in query) {
 
-		if (query[key]['$undef'] !== undefined) {
+		if (query[key] !== null && typeof(query[key]) === 'object') {
 
-			// the field does not exist in the document
-			// make sure there is no $undef operator for this field
-			if (doc[key] === undefined) {
-				match++;
-				matched_field_count++;
-				//console.log('$undef match', key);
-				delete query[key];
+			if (query[key]['$undef'] !== undefined) {
+
+				// the field does not exist in the document
+				// make sure there is no $undef operator for this field
+				if (doc[key] === undefined) {
+					match++;
+					matched_field_count++;
+					//console.log('$undef match', key);
+					delete query[key];
+				}
+
 			}
 
 		}
