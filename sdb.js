@@ -277,7 +277,7 @@ var deep_find_in_doc = function(query, doc) {
 					match++;
 					matched_field_count++;
 					//console.log('$undef match', key);
-					delete query[key];
+					continue;
 				}
 
 			}
