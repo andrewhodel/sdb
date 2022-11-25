@@ -1177,12 +1177,6 @@ sdb.prototype.index = function(field, unique=false, required_field=false) {
 	}
 	this.canUse = 0;
 
-	// first check if the index already exists
-	if (typeof(this.indexes[field]) == 'object') {
-		this.canUse = 1;
-		return 'this index already exists';
-	}
-
 	var values = [];
 	var db_positions = [];
 	var error = null;
